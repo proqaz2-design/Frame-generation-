@@ -151,9 +151,7 @@ class GameLauncher(private val context: Context) {
             )
 
             for (cmd in commands) {
-                val process = rikka.shizuku.Shizuku.newProcess(
-                    arrayOf("sh", "-c", cmd), null, null
-                )
+                val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", cmd))
                 process.waitFor()
                 Log.d(TAG, "Shizuku: $cmd -> ${process.exitValue()}")
             }
