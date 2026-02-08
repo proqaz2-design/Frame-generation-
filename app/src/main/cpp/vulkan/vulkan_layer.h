@@ -37,7 +37,7 @@ typedef enum VkLayerFunction_ {
 typedef struct VkLayerInstanceLink_ {
     struct VkLayerInstanceLink_* pNext;
     PFN_vkGetInstanceProcAddr pfnNextGetInstanceProcAddr;
-    PFN_vkGetPhysicalDeviceProcAddr pfnNextGetPhysicalDeviceProcAddr;
+    PFN_vkVoidFunction pfnNextGetPhysicalDeviceProcAddr;  // PFN_vkGetPhysicalDeviceProcAddr not in NDK
 } VkLayerInstanceLink;
 
 typedef struct VkLayerInstanceCreateInfo_ {
