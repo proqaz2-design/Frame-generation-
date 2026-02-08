@@ -120,6 +120,12 @@
             </intent-filter>
         </receiver>
 
+        <!-- FPS Overlay Service — floating FPS counter -->
+        <service
+            android:name=".overlay.FpsOverlayService"
+            android:enabled="true"
+            android:exported="false" />
+
     </application>
 
 </manifest>

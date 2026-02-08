@@ -32,6 +32,15 @@ class GameDetectorService : AccessibilityService() {
 
         // Common game package prefixes/patterns
         private val GAME_PACKAGE_HINTS = listOf(
+            // === Windows emulators (Winlator, etc.) ===
+            "com.winlator",
+            "com.pairip.winlator",
+            "br.pucrio.winlator",
+            "com.niceplayer.winlator",
+            // ExaGear, Mobox, etc.
+            "com.eltechs.ed", "com.eltechs.es",
+            "com.mobox",
+            // === Game publishers ===
             "com.supercell",
             "com.miHoYo", "com.HoYoverse",
             "com.tencent.ig", "com.pubg",
@@ -47,7 +56,13 @@ class GameDetectorService : AccessibilityService() {
             "com.ubisoft", "com.riotgames",
             "jp.konami", "com.netease",
             "com.lilithgames", "com.yostar",
-            "com.plarium", "com.scopely"
+            "com.plarium", "com.scopely",
+            // Emulators running games
+            "com.ppsspp", "org.ppsspp",
+            "org.dolphinemu", "org.citra",
+            "com.retroarch", "org.libretro",
+            "ru.niceplayer", "skyline.emu",
+            "org.yuzu.yuzu_emu"
         )
     }
 

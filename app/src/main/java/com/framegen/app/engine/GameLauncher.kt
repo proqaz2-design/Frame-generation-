@@ -199,6 +199,16 @@ class GameLauncher(private val context: Context) {
      */
     fun isKnownGame(packageName: String): Boolean {
         val gamePatterns = listOf(
+            // Windows emulators
+            "com.winlator", "com.pairip.winlator",
+            "br.pucrio.winlator", "com.niceplayer.winlator",
+            "com.eltechs", "com.mobox",
+            // Retro/console emulators
+            "com.ppsspp", "org.ppsspp",
+            "org.dolphinemu", "org.citra",
+            "com.retroarch", "org.libretro",
+            "skyline.emu", "org.yuzu",
+            // Game publishers
             "com.activision", "com.ea.", "com.gameloft",
             "com.supercell", "com.tencent", "com.mihoyo",
             "com.epicgames", "com.pubg", "com.garena",
@@ -207,7 +217,7 @@ class GameLauncher(private val context: Context) {
             "com.bandainamco", "com.konami", "com.sega",
             "com.netease", "com.blizzard", "com.ubisoft",
         )
-        return gamePatterns.any { packageName.startsWith(it) }
+        return gamePatterns.any { packageName.startsWith(it, ignoreCase = true) }
     }
 
     private fun hasGameMetadata(appInfo: android.content.pm.ApplicationInfo): Boolean {

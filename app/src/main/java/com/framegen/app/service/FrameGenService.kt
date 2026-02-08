@@ -13,6 +13,7 @@ import com.framegen.app.R
 import com.framegen.app.engine.FrameGenEngine
 import com.framegen.app.engine.GameLauncher
 import com.framegen.app.engine.RefreshRateController
+import com.framegen.app.overlay.FpsOverlayService
 import kotlinx.coroutines.*
 
 /**
@@ -228,6 +229,9 @@ class FrameGenService : Service() {
                 updateNotification()
                 startStatsMonitor()
 
+                // Show FPS overlay
+                FpsOverlayService.show(this@FrameGenService, targetFps.toFloat())
+
                 Log.i(TAG, "Frame generation active for $packageName @ ${targetFps}fps")
                 sendBroadcast(Intent("com.framegen.app.STATE_CHANGED"))
 
@@ -247,6 +251,9 @@ class FrameGenService : Service() {
         statsJob?.cancel()
         isActivelyGenerating = false
         currentGamePackage = null
+
+        // Hide FPS overlay
+        FpsOverlayService.hide(this)
 
         updateNotification()
         sendBroadcast(Intent("com.framegen.app.STATE_CHANGED"))

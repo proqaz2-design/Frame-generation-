@@ -14,6 +14,7 @@ import com.framegen.app.engine.GameLauncher
 import com.framegen.app.engine.RefreshRateController
 import com.framegen.app.service.FrameGenService
 import com.framegen.app.service.GameDetectorService
+import com.framegen.app.overlay.FpsOverlayService
 import kotlinx.coroutines.*
 
 class MainActivity : AppCompatActivity() {
@@ -37,6 +38,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var switchSystemService: Switch
     private lateinit var btnAccessibility: Button
     private lateinit var txtServiceStatus: TextView
+    private lateinit var switchFpsOverlay: Switch
 
     private var statsJob: Job? = null
     private var selectedGame: GameLauncher.GameInfo? = null
@@ -100,11 +102,13 @@ class MainActivity : AppCompatActivity() {
         switchSystemService = findViewById(R.id.switchSystemService)
         btnAccessibility = findViewById(R.id.btnAccessibility)
         txtServiceStatus = findViewById(R.id.txtServiceStatus)
+        switchFpsOverlay = findViewById(R.id.switchFpsOverlay)
 
         // Restore prefs
         val prefs = getSharedPreferences(FrameGenService.PREF_NAME, MODE_PRIVATE)
         switchAutoStart.isChecked = prefs.getBoolean(FrameGenService.PREF_AUTO_START_BOOT, false)
         switchSystemService.isChecked = FrameGenService.isRunning
+        switchFpsOverlay.isChecked = FpsOverlayService.isShowing
 
         updateServiceStatusUI()
     }
@@ -190,6 +194,29 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
             startActivity(intent)
             Toast.makeText(this, "Enable 'FrameGen Game Detector'", Toast.LENGTH_LONG).show()
+        }
+
+        // FPS Overlay toggle
+        switchFpsOverlay.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                // Check overlay permission
+                if (!Settings.canDrawOverlays(this)) {
+                    switchFpsOverlay.isChecked = false
+                    val intent = Intent(
+                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        android.net.Uri.parse("package:$packageName")
+                    )
+                    startActivity(intent)
+                    Toast.makeText(this, "Allow 'Display over other apps' for FrameGen", Toast.LENGTH_LONG).show()
+                } else {
+                    val targetFps = when (spinnerMode.selectedItemPosition) {
+                        1 -> 60f; 2 -> 90f; 3 -> 120f; else -> 60f
+                    }
+                    FpsOverlayService.show(this, targetFps)
+                }
+            } else {
+                FpsOverlayService.hide(this)
+            }
         }
     }
 
