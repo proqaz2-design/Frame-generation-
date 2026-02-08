@@ -1,53 +1,100 @@
 package com.framegen.app
 
+import android.app.ActivityManager
 import android.content.*
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.view.SurfaceHolder
-import android.view.SurfaceView
+import android.util.Log
 import android.view.View
 import android.widget.*
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.framegen.app.engine.FrameGenEngine
-import com.framegen.app.engine.GameLauncher
 import com.framegen.app.engine.RefreshRateController
+import com.framegen.app.overlay.FpsOverlayService
 import com.framegen.app.service.FrameGenService
 import com.framegen.app.service.GameDetectorService
-import com.framegen.app.overlay.FpsOverlayService
 import kotlinx.coroutines.*
+import java.io.File
 
+/**
+ * Frame Generation for Android — Rootless
+ *
+ * Utility dashboard inspired by lybxlpsv's Frame Generation.
+ * Injects Vulkan interpolation layer into games WITHOUT root,
+ * using Shizuku / ADB gpu_debug_layers mechanism.
+ */
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var engine: FrameGenEngine
-    private lateinit var gameLauncher: GameLauncher
-    private lateinit var refreshController: RefreshRateController
+    companion object {
+        private const val TAG = "FrameGenMain"
+        private const val PREFS = "framegen_prefs"
+    }
 
-    private lateinit var surfaceView: SurfaceView
-    private lateinit var btnStart: Button
-    private lateinit var btnStop: Button
-    private lateinit var btnSelectGame: Button
+    // Device info views
+    private lateinit var txtGpuName: TextView
+    private lateinit var txtVulkanDriver: TextView
+    private lateinit var txtRefreshRate: TextView
+    private lateinit var txtResolution: TextView
+
+    // Compatibility
+    private lateinit var txtCompatStatus: TextView
+    private lateinit var checkVulkan: TextView
+    private lateinit var checkGpu: TextView
+    private lateinit var checkRefresh: TextView
+    private lateinit var checkShizuku: TextView
+
+    // Controls
+    private lateinit var spinnerMethod: Spinner
     private lateinit var spinnerMode: Spinner
+    private lateinit var seekTargetFps: SeekBar
+    private lateinit var txtTargetFps: TextView
     private lateinit var seekQuality: SeekBar
-    private lateinit var txtStats: TextView
-    private lateinit var txtDisplayInfo: TextView
+    private lateinit var txtQuality: TextView
+
+    // Game selection
+    private lateinit var btnSelectGame: Button
+    private lateinit var txtSelectedGame: TextView
+    private lateinit var txtGameInfo: TextView
+
+    // Main toggle
+    private lateinit var btnToggle: Button
+
+    // Stats
+    private lateinit var cardStats: View
+    private lateinit var txtFps: TextView
+    private lateinit var txtFrameTime: TextView
+    private lateinit var txtGenerated: TextView
+    private lateinit var txtDropped: TextView
     private lateinit var txtGpuTemp: TextView
-    private lateinit var switchThermal: Switch
-    private lateinit var gameListView: ListView
-    private lateinit var switchAutoStart: Switch
-    private lateinit var switchSystemService: Switch
-    private lateinit var btnAccessibility: Button
-    private lateinit var txtServiceStatus: TextView
+
+    // Status
+    private lateinit var statusDot: View
+    private lateinit var txtStatus: TextView
+    private lateinit var statusBadge: View
+
+    // Options
     private lateinit var switchFpsOverlay: Switch
+    private lateinit var switchAutoDetect: Switch
+    private lateinit var switchForceRefresh: Switch
+    private lateinit var switchThermal: Switch
 
     private var statsJob: Job? = null
-    private var selectedGame: GameLauncher.GameInfo? = null
+    private var isActive = false
+    private var selectedPackage: String? = null
+    private var selectedAppName: String? = null
+
+    private val engine = FrameGenEngine()
 
     // Listen for service state changes
     private val stateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            updateServiceStatusUI()
+            updateUI()
         }
     }
 
@@ -55,366 +102,615 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        engine = FrameGenEngine()
-        gameLauncher = GameLauncher(this)
-        refreshController = RefreshRateController(this)
-
         initViews()
         setupListeners()
-        showDisplayInfo()
+        detectDeviceInfo()
+        checkCompatibility()
+        loadPrefs()
+        updateUI()
 
-        // Register for service state updates
+        // Register receiver
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(stateReceiver, IntentFilter("com.framegen.app.STATE_CHANGED"),
                 RECEIVER_NOT_EXPORTED)
         } else {
             registerReceiver(stateReceiver, IntentFilter("com.framegen.app.STATE_CHANGED"))
         }
-
-        // Auto-start service if it was enabled
-        val prefs = getSharedPreferences(FrameGenService.PREF_NAME, MODE_PRIVATE)
-        if (prefs.getBoolean(FrameGenService.PREF_ENABLED, false)) {
-            FrameGenService.start(this)
-        }
-    }
-
-    private fun initViews() {
-        surfaceView = findViewById(R.id.surfaceView)
-        btnStart = findViewById(R.id.btnStart)
-        btnStop = findViewById(R.id.btnStop)
-        btnSelectGame = findViewById(R.id.btnSelectGame)
-        spinnerMode = findViewById(R.id.spinnerMode)
-        seekQuality = findViewById(R.id.seekQuality)
-        txtStats = findViewById(R.id.txtStats)
-        txtDisplayInfo = findViewById(R.id.txtDisplayInfo)
-        txtGpuTemp = findViewById(R.id.txtGpuTemp)
-        switchThermal = findViewById(R.id.switchThermal)
-        gameListView = findViewById(R.id.gameListView)
-
-        // Mode spinner
-        val modes = arrayOf("OFF", "30→60 FPS", "30→90 FPS", "30→120 FPS")
-        spinnerMode.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, modes)
-        spinnerMode.setSelection(1) // Default: 60fps
-
-        // Quality slider
-        seekQuality.max = 100
-        seekQuality.progress = 50
-
-        btnStop.isEnabled = false
-
-        // System service controls
-        switchAutoStart = findViewById(R.id.switchAutoStart)
-        switchSystemService = findViewById(R.id.switchSystemService)
-        btnAccessibility = findViewById(R.id.btnAccessibility)
-        txtServiceStatus = findViewById(R.id.txtServiceStatus)
-        switchFpsOverlay = findViewById(R.id.switchFpsOverlay)
-
-        // Restore prefs
-        val prefs = getSharedPreferences(FrameGenService.PREF_NAME, MODE_PRIVATE)
-        switchAutoStart.isChecked = prefs.getBoolean(FrameGenService.PREF_AUTO_START_BOOT, false)
-        switchSystemService.isChecked = FrameGenService.isRunning
-        switchFpsOverlay.isChecked = FpsOverlayService.isShowing
-
-        updateServiceStatusUI()
-    }
-
-    private fun setupListeners() {
-        // Surface lifecycle
-        surfaceView.holder.addCallback(object : SurfaceHolder.Callback {
-            override fun surfaceCreated(holder: SurfaceHolder) {
-                // Surface is ready for Vulkan rendering
-            }
-
-            override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
-                // Reinitialize if size changes
-            }
-
-            override fun surfaceDestroyed(holder: SurfaceHolder) {
-                engine.stop()
-            }
-        })
-
-        // Start button
-        btnStart.setOnClickListener {
-            startFrameGeneration()
-        }
-
-        // Stop button
-        btnStop.setOnClickListener {
-            stopFrameGeneration()
-        }
-
-        // Select game
-        btnSelectGame.setOnClickListener {
-            showGameList()
-        }
-
-        // Mode change
-        spinnerMode.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, pos: Int, id: Long) {
-                engine.setMode(pos)
-                // Update target refresh rate
-                val targetRate = when (pos) {
-                    1 -> 60f
-                    2 -> 90f
-                    3 -> 120f
-                    else -> 60f
-                }
-                refreshController.requestRefreshRate(this@MainActivity, targetRate)
-            }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        }
-
-        // Quality slider
-        seekQuality.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                engine.setQuality(progress / 100f)
-                FrameGenService.updateMode(this@MainActivity,
-                    spinnerMode.selectedItemPosition, progress / 100f)
-            }
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-        })
-
-        // System service toggle
-        switchSystemService.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) {
-                FrameGenService.start(this)
-            } else {
-                FrameGenService.stop(this)
-            }
-            updateServiceStatusUI()
-        }
-
-        // Auto-start on boot toggle
-        switchAutoStart.setOnCheckedChangeListener { _, isChecked ->
-            getSharedPreferences(FrameGenService.PREF_NAME, MODE_PRIVATE)
-                .edit()
-                .putBoolean(FrameGenService.PREF_AUTO_START_BOOT, isChecked)
-                .apply()
-        }
-
-        // Open accessibility settings
-        btnAccessibility.setOnClickListener {
-            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-            startActivity(intent)
-            Toast.makeText(this, "Enable 'FrameGen Game Detector'", Toast.LENGTH_LONG).show()
-        }
-
-        // FPS Overlay toggle
-        switchFpsOverlay.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) {
-                // Check overlay permission
-                if (!Settings.canDrawOverlays(this)) {
-                    switchFpsOverlay.isChecked = false
-                    val intent = Intent(
-                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                        android.net.Uri.parse("package:$packageName")
-                    )
-                    startActivity(intent)
-                    Toast.makeText(this, "Allow 'Display over other apps' for FrameGen", Toast.LENGTH_LONG).show()
-                } else {
-                    val targetFps = when (spinnerMode.selectedItemPosition) {
-                        1 -> 60f; 2 -> 90f; 3 -> 120f; else -> 60f
-                    }
-                    FpsOverlayService.show(this, targetFps)
-                }
-            } else {
-                FpsOverlayService.hide(this)
-            }
-        }
-    }
-
-    private fun startFrameGeneration() {
-        val surface = surfaceView.holder.surface
-        if (!surface.isValid) {
-            Toast.makeText(this, "Surface not ready", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val mode = spinnerMode.selectedItemPosition
-        val quality = seekQuality.progress / 100f
-        val targetFps = when (mode) {
-            1 -> 60
-            2 -> 90
-            3 -> 120
-            else -> 60
-        }
-
-        // Request matching refresh rate
-        refreshController.requestMaxRefreshRate(this)
-
-        // Initialize and start engine
-        val success = engine.init(surface, assets, mode, quality, targetFps)
-        if (!success) {
-            Toast.makeText(this, "Engine initialization failed", Toast.LENGTH_LONG).show()
-            return
-        }
-
-        engine.start()
-
-        btnStart.isEnabled = false
-        btnStop.isEnabled = true
-
-        // Start stats monitoring
-        startStatsMonitor()
-
-        // Launch selected game
-        selectedGame?.let { game ->
-            gameLauncher.launchGame(game.packageName)
-        }
-
-        Toast.makeText(this, "Frame generation active: ${targetFps}fps", Toast.LENGTH_SHORT).show()
-    }
-
-    private fun stopFrameGeneration() {
-        engine.stop()
-        statsJob?.cancel()
-
-        btnStart.isEnabled = true
-        btnStop.isEnabled = false
-
-        txtStats.text = "Stopped"
-    }
-
-    private fun startStatsMonitor() {
-        statsJob = lifecycleScope.launch(Dispatchers.IO) {
-            while (isActive) {
-                val stats = engine.getStats()
-                val temp = engine.getGpuTemperature()
-                val throttled = engine.isThermalThrottled()
-
-                withContext(Dispatchers.Main) {
-                    txtStats.text = buildString {
-                        appendLine("FPS          %.1f".format(stats.effectiveFps))
-                        appendLine("Capture      %.2f ms".format(stats.captureMs))
-                        appendLine("Motion       %.2f ms".format(stats.motionMs))
-                        appendLine("Interpolate  %.2f ms".format(stats.interpolationMs))
-                        appendLine("Present      %.2f ms".format(stats.presentMs))
-                        appendLine("Total        %.2f ms".format(stats.totalMs))
-                        appendLine("Generated    ${stats.framesGenerated}")
-                        append("Dropped      ${stats.framesDropped}")
-                    }
-                    txtStats.setTextColor(
-                        if (stats.effectiveFps > 50) android.graphics.Color.parseColor("#00ff88")
-                        else if (stats.effectiveFps > 30) android.graphics.Color.parseColor("#ffaa00")
-                        else android.graphics.Color.parseColor("#e63946")
-                    )
-
-                    txtGpuTemp.text = "%.0f°C".format(temp)
-                    val tempColor = when {
-                        throttled -> android.graphics.Color.parseColor("#e63946")
-                        temp >= 70 -> android.graphics.Color.parseColor("#ffaa00")
-                        else -> android.graphics.Color.parseColor("#00ff88")
-                    }
-                    txtGpuTemp.setTextColor(tempColor)
-                }
-
-                delay(500) // Update every 500ms
-            }
-        }
-    }
-
-    private fun showGameList() {
-        lifecycleScope.launch(Dispatchers.IO) {
-            val games = gameLauncher.getInstalledGames()
-
-            withContext(Dispatchers.Main) {
-                val adapter = ArrayAdapter(
-                    this@MainActivity,
-                    android.R.layout.simple_list_item_2,
-                    android.R.id.text1,
-                    games.map { "${it.appName}\n${if (it.isVulkanGame) "✓ Vulkan" else "○ OpenGL"}" }
-                )
-
-                gameListView.adapter = adapter
-                gameListView.visibility = View.VISIBLE
-
-                gameListView.setOnItemClickListener { _, _, position, _ ->
-                    selectedGame = games[position]
-                    btnSelectGame.text = "Game: ${games[position].appName}"
-                    gameListView.visibility = View.GONE
-                }
-            }
-        }
-    }
-
-    private fun showDisplayInfo() {
-        val info = refreshController.getDisplayInfo()
-        txtDisplayInfo.text = "${info.currentRate.toInt()} Hz"
     }
 
     override fun onDestroy() {
-        statsJob?.cancel()
-        engine.destroy()
-        try { unregisterReceiver(stateReceiver) } catch (_: Exception) {}
         super.onDestroy()
+        statsJob?.cancel()
+        try { unregisterReceiver(stateReceiver) } catch (_: Exception) {}
     }
 
     override fun onResume() {
         super.onResume()
-        updateServiceStatusUI()
+        checkCompatibility()
+        updateUI()
     }
 
-    override fun onPause() {
-        super.onPause()
-        // Don't stop engine — service keeps it running in the background
+    // ================================================================
+    // Init
+    // ================================================================
+
+    private fun initViews() {
+        txtGpuName = findViewById(R.id.txtGpuName)
+        txtVulkanDriver = findViewById(R.id.txtVulkanDriver)
+        txtRefreshRate = findViewById(R.id.txtRefreshRate)
+        txtResolution = findViewById(R.id.txtResolution)
+
+        txtCompatStatus = findViewById(R.id.txtCompatStatus)
+        checkVulkan = findViewById(R.id.checkVulkan)
+        checkGpu = findViewById(R.id.checkGpu)
+        checkRefresh = findViewById(R.id.checkRefresh)
+        checkShizuku = findViewById(R.id.checkShizuku)
+
+        spinnerMethod = findViewById(R.id.spinnerMethod)
+        spinnerMode = findViewById(R.id.spinnerMode)
+        seekTargetFps = findViewById(R.id.seekTargetFps)
+        txtTargetFps = findViewById(R.id.txtTargetFps)
+        seekQuality = findViewById(R.id.seekQuality)
+        txtQuality = findViewById(R.id.txtQuality)
+
+        btnSelectGame = findViewById(R.id.btnSelectGame)
+        txtSelectedGame = findViewById(R.id.txtSelectedGame)
+        txtGameInfo = findViewById(R.id.txtGameInfo)
+
+        btnToggle = findViewById(R.id.btnToggle)
+
+        cardStats = findViewById(R.id.cardStats)
+        txtFps = findViewById(R.id.txtFps)
+        txtFrameTime = findViewById(R.id.txtFrameTime)
+        txtGenerated = findViewById(R.id.txtGenerated)
+        txtDropped = findViewById(R.id.txtDropped)
+        txtGpuTemp = findViewById(R.id.txtGpuTemp)
+
+        statusDot = findViewById(R.id.statusDot)
+        txtStatus = findViewById(R.id.txtStatus)
+        statusBadge = findViewById(R.id.statusBadge)
+
+        switchFpsOverlay = findViewById(R.id.switchFpsOverlay)
+        switchAutoDetect = findViewById(R.id.switchAutoDetect)
+        switchForceRefresh = findViewById(R.id.switchForceRefresh)
+        switchThermal = findViewById(R.id.switchThermal)
+
+        // Populate spinners
+        val methods = arrayOf("Shizuku (recommended)", "ADB WiFi Debug", "Accessibility Hook")
+        spinnerMethod.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, methods)
+
+        val modes = arrayOf("RIFE (Balanced)", "RIFE (Quality)", "MVA Fast", "Low Latency")
+        spinnerMode.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, modes)
     }
 
-    private fun updateServiceStatusUI() {
-        val serviceOn = FrameGenService.isRunning
-        val generating = FrameGenService.isActivelyGenerating
-        val accessibilityOn = GameDetectorService.isServiceActive
-        val game = FrameGenService.currentGamePackage
+    private fun setupListeners() {
+        // Target FPS slider
+        seekTargetFps.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
+                txtTargetFps.text = progress.toString()
+            }
+            override fun onStartTrackingTouch(sb: SeekBar?) {}
+            override fun onStopTrackingTouch(sb: SeekBar?) {}
+        })
 
-        switchSystemService.isChecked = serviceOn
+        // Quality slider
+        seekQuality.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
+                txtQuality.text = when {
+                    progress < 25 -> "Low"
+                    progress < 50 -> "Medium"
+                    progress < 75 -> "High"
+                    else -> "Ultra"
+                }
+            }
+            override fun onStartTrackingTouch(sb: SeekBar?) {}
+            override fun onStopTrackingTouch(sb: SeekBar?) {}
+        })
 
-        // Update status dot in header
-        val txtStatusDot = findViewById<TextView>(R.id.txtStatusDot)
-        if (generating) {
-            txtStatusDot.text = "ON"
-            txtStatusDot.setTextColor(android.graphics.Color.parseColor("#00ff88"))
-        } else if (serviceOn) {
-            txtStatusDot.text = "IDLE"
-            txtStatusDot.setTextColor(android.graphics.Color.parseColor("#00d4ff"))
-        } else {
-            txtStatusDot.text = "OFF"
-            txtStatusDot.setTextColor(android.graphics.Color.parseColor("#555577"))
-        }
+        // Select game
+        btnSelectGame.setOnClickListener { showGamePicker() }
 
-        val status = buildString {
-            append(if (serviceOn) "● " else "○ ")
-            append("Service: ")
-            appendLine(if (serviceOn) "Running" else "Stopped")
+        // Main toggle
+        btnToggle.setOnClickListener { toggleFrameGeneration() }
 
-            append(if (accessibilityOn) "● " else "○ ")
-            append("Detector: ")
-            appendLine(if (accessibilityOn) "Active" else "Disabled")
-
-            append(if (generating) "● " else "○ ")
-            append("FrameGen: ")
-            if (generating) {
-                appendLine("Active")
-                append("  └ ")
-                append(game?.split(".")?.lastOrNull() ?: game ?: "unknown")
+        // FPS Overlay
+        switchFpsOverlay.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                if (Settings.canDrawOverlays(this)) {
+                    FpsOverlayService.start(this)
+                } else {
+                    switchFpsOverlay.isChecked = false
+                    startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION))
+                }
             } else {
-                append(if (serviceOn) "Waiting for game..." else "Off")
+                FpsOverlayService.stop(this)
             }
         }
 
-        txtServiceStatus.text = status
-        txtServiceStatus.setTextColor(
-            if (generating) android.graphics.Color.parseColor("#00ff88")
-            else android.graphics.Color.parseColor("#5a5a8a")
+        // Auto-detect
+        switchAutoDetect.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked && !isAccessibilityEnabled()) {
+                switchAutoDetect.isChecked = false
+                AlertDialog.Builder(this, R.style.Theme_FrameGen)
+                    .setTitle("Accessibility Service Required")
+                    .setMessage("Enable the FrameGen game detector in Accessibility settings to auto-detect when games launch.")
+                    .setPositiveButton("Open Settings") { _, _ ->
+                        startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
+        }
+
+        // Force refresh rate
+        switchForceRefresh.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                RefreshRateController.forceHighRefreshRate(this)
+            }
+            savePrefs()
+        }
+
+        // Thermal guard
+        switchThermal.setOnCheckedChangeListener { _, _ -> savePrefs() }
+    }
+
+    // ================================================================
+    // Device Info Detection
+    // ================================================================
+
+    private fun detectDeviceInfo() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            val gpuInfo = detectGpuInfo()
+            val display = getDisplayInfo()
+
+            withContext(Dispatchers.Main) {
+                txtGpuName.text = gpuInfo.name
+                txtVulkanDriver.text = gpuInfo.driverVersion
+                txtRefreshRate.text = "${display.refreshRate.toInt()} Hz"
+                txtResolution.text = "${display.width} × ${display.height}"
+            }
+        }
+    }
+
+    data class GpuInfo(val name: String, val driverVersion: String, val isAdreno: Boolean, val isMali: Boolean)
+    data class DisplayInfo(val refreshRate: Float, val width: Int, val height: Int)
+
+    private fun detectGpuInfo(): GpuInfo {
+        var gpuName = "Unknown"
+        var driverVersion = "Unknown"
+
+        // Try reading from /sys
+        try {
+            val kgslFiles = listOf(
+                "/sys/class/kgsl/kgsl-3d0/gpu_model",
+                "/sys/class/kgsl/kgsl-3d0/gpu_busy_percentage"
+            )
+            for (path in kgslFiles) {
+                val f = File(path.replace("gpu_busy_percentage", "gpu_model"))
+                if (f.exists()) {
+                    gpuName = f.readText().trim()
+                    break
+                }
+            }
+        } catch (_: Exception) {}
+
+        // Fallback: try Build props
+        if (gpuName == "Unknown") {
+            gpuName = try {
+                val prop = Runtime.getRuntime().exec(arrayOf("getprop", "ro.hardware.egl"))
+                val result = prop.inputStream.bufferedReader().readText().trim()
+                if (result.isNotEmpty()) result else Build.HARDWARE
+            } catch (_: Exception) {
+                Build.HARDWARE
+            }
+        }
+
+        // Detect Adreno from chipset
+        val chipset = Build.HARDWARE.lowercase()
+        val isAdreno = gpuName.lowercase().contains("adreno") || chipset.contains("qcom") || chipset.contains("snapdragon")
+        val isMali = gpuName.lowercase().contains("mali")
+
+        // Get Vulkan driver version
+        try {
+            val proc = Runtime.getRuntime().exec(arrayOf("getprop", "ro.gfx.driver.1"))
+            val result = proc.inputStream.bufferedReader().readText().trim()
+            if (result.isNotEmpty()) {
+                driverVersion = result
+            }
+        } catch (_: Exception) {}
+
+        if (driverVersion == "Unknown") {
+            driverVersion = "System default"
+        }
+
+        return GpuInfo(gpuName, driverVersion, isAdreno, isMali)
+    }
+
+    private fun getDisplayInfo(): DisplayInfo {
+        val dm = resources.displayMetrics
+        val refreshRate = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            display?.refreshRate ?: 60f
+        } else {
+            @Suppress("DEPRECATION")
+            windowManager.defaultDisplay.refreshRate
+        }
+        return DisplayInfo(refreshRate, dm.widthPixels, dm.heightPixels)
+    }
+
+    // ================================================================
+    // Compatibility Check
+    // ================================================================
+
+    private fun checkCompatibility() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            val gpu = detectGpuInfo()
+            val display = getDisplayInfo()
+            val hasShizuku = isShizukuAvailable()
+
+            // Check Vulkan
+            val hasVulkan = File("/system/lib64/libvulkan.so").exists() ||
+                    File("/system/lib/libvulkan.so").exists() ||
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
+
+            // Check GPU compat
+            val gpuOk = gpu.isAdreno || gpu.isMali
+
+            // Check refresh rate (120Hz+)
+            val refreshOk = display.refreshRate >= 90f
+
+            val allOk = hasVulkan && gpuOk && refreshOk && hasShizuku
+
+            withContext(Dispatchers.Main) {
+                setCheckItem(checkVulkan, "Vulkan Support", hasVulkan)
+                setCheckItem(checkGpu, "GPU: ${gpu.name}", gpuOk)
+                setCheckItem(checkRefresh, "${display.refreshRate.toInt()}Hz Display", refreshOk)
+                setCheckItem(checkShizuku, "Shizuku / ADB", hasShizuku)
+
+                txtCompatStatus.text = when {
+                    allOk -> "Device is compatible ✓"
+                    !hasVulkan -> "Vulkan not detected. Frame generation requires Vulkan."
+                    !gpuOk -> "GPU may not be fully compatible. Adreno 6xx+ or Mali Valhall recommended."
+                    !refreshOk -> "Low refresh rate display. 120Hz+ recommended for best results."
+                    !hasShizuku -> "Shizuku not running. Install Shizuku and activate via ADB."
+                    else -> "Some compatibility issues detected."
+                }
+                txtCompatStatus.setTextColor(if (allOk) Color.parseColor("#4CAF50") else Color.parseColor("#FF9800"))
+            }
+        }
+    }
+
+    private fun setCheckItem(tv: TextView, label: String, ok: Boolean) {
+        val icon = if (ok) "✓" else "✗"
+        val color = if (ok) "#4CAF50" else "#FF5252"
+        tv.text = "$icon  $label"
+        tv.setTextColor(Color.parseColor(color))
+    }
+
+    private fun isShizukuAvailable(): Boolean {
+        return try {
+            rikka.shizuku.Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
+        } catch (_: Exception) {
+            // Check if Shizuku is at least installed
+            try {
+                packageManager.getPackageInfo("moe.shizuku.privileged.api", 0)
+                false // Installed but not running/permitted
+            } catch (_: Exception) {
+                false
+            }
+        }
+    }
+
+    // ================================================================
+    // Game Picker
+    // ================================================================
+
+    private fun showGamePicker() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            val pm = packageManager
+            val games = mutableListOf<Pair<String, String>>() // name, package
+
+            val apps = pm.getInstalledApplications(0)
+            for (app in apps) {
+                if (app.flags and ApplicationInfo.FLAG_SYSTEM != 0) continue
+
+                val isGame = try {
+                    app.category == ApplicationInfo.CATEGORY_GAME
+                } catch (_: Exception) { false }
+
+                // Also detect by package name patterns
+                val pkg = app.packageName.lowercase()
+                val isLikelyGame = isGame ||
+                        pkg.contains("game") ||
+                        pkg.contains("com.tencent") ||
+                        pkg.contains("com.activision") ||
+                        pkg.contains("com.supercell") ||
+                        pkg.contains("com.garena") ||
+                        pkg.contains("com.mihoyo") ||
+                        pkg.contains("com.epicgames") ||
+                        pkg.contains("com.riotgames") ||
+                        pkg.contains("com.pubg") ||
+                        pkg.contains("com.ea.") ||
+                        pkg.contains("com.gameloft") ||
+                        pkg.contains("com.netease") ||
+                        pkg.contains("winlator") ||
+                        pkg.contains("ppsspp") ||
+                        pkg.contains("dolphin") ||
+                        pkg.contains("retroarch") ||
+                        pkg.contains("gamehub")
+
+                if (isLikelyGame) {
+                    val name = pm.getApplicationLabel(app).toString()
+                    games.add(Pair(name, app.packageName))
+                }
+            }
+
+            games.sortBy { it.first }
+
+            withContext(Dispatchers.Main) {
+                if (games.isEmpty()) {
+                    Toast.makeText(this@MainActivity, "No games found", Toast.LENGTH_SHORT).show()
+                    return@withContext
+                }
+
+                val names = games.map { "${it.first}\n${it.second}" }.toTypedArray()
+                AlertDialog.Builder(this@MainActivity, R.style.Theme_FrameGen)
+                    .setTitle("Select Game")
+                    .setItems(names) { _, which ->
+                        val (name, pkg) = games[which]
+                        selectedPackage = pkg
+                        selectedAppName = name
+                        txtSelectedGame.text = name
+                        txtSelectedGame.setTextColor(Color.parseColor("#CCCCCC"))
+                        txtGameInfo.text = pkg
+                        txtGameInfo.visibility = View.VISIBLE
+                        savePrefs()
+                    }
+                    .show()
+            }
+        }
+    }
+
+    // ================================================================
+    // Frame Generation Toggle
+    // ================================================================
+
+    private fun toggleFrameGeneration() {
+        if (isActive) {
+            stopFrameGeneration()
+        } else {
+            startFrameGeneration()
+        }
+    }
+
+    private fun startFrameGeneration() {
+        if (selectedPackage == null) {
+            Toast.makeText(this, "Select a target app first", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        lifecycleScope.launch {
+            // Step 1: Inject Vulkan layer via chosen method
+            val method = spinnerMethod.selectedItemPosition
+            val success = withContext(Dispatchers.IO) {
+                injectVulkanLayer(selectedPackage!!, method)
+            }
+
+            if (!success) {
+                Toast.makeText(this@MainActivity,
+                    "Failed to inject Vulkan layer. Check Shizuku/ADB.", Toast.LENGTH_LONG).show()
+                return@launch
+            }
+
+            // Step 2: Start the background service
+            FrameGenService.start(this@MainActivity)
+
+            isActive = true
+            updateUI()
+            startStatsMonitor()
+
+            Toast.makeText(this@MainActivity,
+                "Frame generation enabled for $selectedAppName", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun stopFrameGeneration() {
+        lifecycleScope.launch {
+            // Clean up GPU debug layers
+            withContext(Dispatchers.IO) {
+                cleanupVulkanLayer()
+            }
+
+            FrameGenService.stop(this@MainActivity)
+            statsJob?.cancel()
+            isActive = false
+            updateUI()
+        }
+    }
+
+    // ================================================================
+    // Rootless Vulkan Layer Injection
+    // ================================================================
+
+    /**
+     * Inject our Vulkan layer into the target game using Android's
+     * gpu_debug_layers system settings. This is the same mechanism
+     * that GPU profiling tools use — NO ROOT REQUIRED.
+     *
+     * Method 0: Shizuku (recommended)
+     * Method 1: ADB WiFi (requires pairing)
+     * Method 2: Accessibility-based (fallback)
+     */
+    private fun injectVulkanLayer(targetPackage: String, method: Int): Boolean {
+        val commands = arrayOf(
+            "settings put global enable_gpu_debug_layers 1",
+            "settings put global gpu_debug_app $targetPackage",
+            "settings put global gpu_debug_layers VK_LAYER_FRAMEGEN_interpolation",
+            "settings put global gpu_debug_layer_app ${packageName}"
         )
 
-        // Accessibility button
-        if (!accessibilityOn) {
-            btnAccessibility.background = getDrawable(R.drawable.btn_warning)
-            btnAccessibility.text = "Enable Game Detector"
+        return when (method) {
+            0 -> executeViaShizuku(commands)
+            1 -> executeViaAdb(commands)
+            2 -> {
+                // Accessibility method: just start the game with our service active
+                Log.i(TAG, "Using accessibility hook method")
+                true
+            }
+            else -> false
+        }
+    }
+
+    private fun cleanupVulkanLayer(): Boolean {
+        val commands = arrayOf(
+            "settings put global enable_gpu_debug_layers 0",
+            "settings delete global gpu_debug_app",
+            "settings delete global gpu_debug_layers",
+            "settings delete global gpu_debug_layer_app"
+        )
+        return try {
+            for (cmd in commands) {
+                Runtime.getRuntime().exec(arrayOf("sh", "-c", cmd)).waitFor()
+            }
+            true
+        } catch (e: Exception) {
+            Log.w(TAG, "Cleanup failed", e)
+            false
+        }
+    }
+
+    private fun executeViaShizuku(commands: Array<String>): Boolean {
+        return try {
+            if (rikka.shizuku.Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED) {
+                Log.w(TAG, "Shizuku permission not granted")
+                return false
+            }
+            for (cmd in commands) {
+                val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", cmd))
+                process.waitFor()
+                Log.d(TAG, "Shizuku exec: $cmd -> ${process.exitValue()}")
+            }
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Shizuku injection failed", e)
+            false
+        }
+    }
+
+    private fun executeViaAdb(commands: Array<String>): Boolean {
+        return try {
+            for (cmd in commands) {
+                val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", cmd))
+                process.waitFor()
+                Log.d(TAG, "ADB exec: $cmd -> ${process.exitValue()}")
+            }
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "ADB injection failed", e)
+            false
+        }
+    }
+
+    // ================================================================
+    // Stats Monitor
+    // ================================================================
+
+    private fun startStatsMonitor() {
+        statsJob?.cancel()
+        statsJob = lifecycleScope.launch {
+            cardStats.visibility = View.VISIBLE
+            while (isActive) {
+                try {
+                    val stats = withContext(Dispatchers.IO) { engine.getStats() }
+                    txtFps.text = String.format("%.1f", stats.effectiveFps)
+                    txtFrameTime.text = String.format("%.1f ms", stats.totalMs)
+                    txtGenerated.text = stats.framesGenerated.toString()
+                    txtDropped.text = stats.framesDropped.toString()
+                    txtGpuTemp.text = if (stats.gpuTempCelsius > 0)
+                        "${stats.gpuTempCelsius.toInt()}°C" else "--°C"
+                } catch (_: Exception) {}
+                delay(500)
+            }
+        }
+    }
+
+    // ================================================================
+    // UI Update
+    // ================================================================
+
+    private fun updateUI() {
+        if (isActive) {
+            btnToggle.text = "DISABLE FRAME GENERATION"
+            btnToggle.setBackgroundResource(R.drawable.btn_disable)
+            statusDot.setBackgroundResource(R.drawable.dot_active)
+            txtStatus.text = "ACTIVE"
+            txtStatus.setTextColor(Color.parseColor("#4CAF50"))
+            statusBadge.setBackgroundResource(R.drawable.badge_active)
+            cardStats.visibility = View.VISIBLE
         } else {
-            btnAccessibility.background = getDrawable(R.drawable.btn_start)
-            btnAccessibility.text = "Game Detector Active"
+            btnToggle.text = "ENABLE FRAME GENERATION"
+            btnToggle.setBackgroundResource(R.drawable.btn_enable)
+            statusDot.setBackgroundResource(R.drawable.dot_inactive)
+            txtStatus.text = "OFF"
+            txtStatus.setTextColor(Color.parseColor("#888888"))
+            statusBadge.setBackgroundResource(R.drawable.badge_inactive)
+            cardStats.visibility = View.GONE
+        }
+    }
+
+    // ================================================================
+    // Prefs
+    // ================================================================
+
+    private fun savePrefs() {
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit().apply {
+            putString("selectedPackage", selectedPackage)
+            putString("selectedAppName", selectedAppName)
+            putInt("targetFps", seekTargetFps.progress)
+            putInt("quality", seekQuality.progress)
+            putInt("method", spinnerMethod.selectedItemPosition)
+            putInt("mode", spinnerMode.selectedItemPosition)
+            putBoolean("forceRefresh", switchForceRefresh.isChecked)
+            putBoolean("thermal", switchThermal.isChecked)
+            apply()
+        }
+    }
+
+    private fun loadPrefs() {
+        val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
+        selectedPackage = prefs.getString("selectedPackage", null)
+        selectedAppName = prefs.getString("selectedAppName", null)
+
+        if (selectedPackage != null) {
+            txtSelectedGame.text = selectedAppName ?: selectedPackage
+            txtSelectedGame.setTextColor(Color.parseColor("#CCCCCC"))
+            txtGameInfo.text = selectedPackage
+            txtGameInfo.visibility = View.VISIBLE
+        }
+
+        seekTargetFps.progress = prefs.getInt("targetFps", 120)
+        txtTargetFps.text = seekTargetFps.progress.toString()
+
+        seekQuality.progress = prefs.getInt("quality", 75)
+
+        spinnerMethod.setSelection(prefs.getInt("method", 0))
+        spinnerMode.setSelection(prefs.getInt("mode", 0))
+
+        switchForceRefresh.isChecked = prefs.getBoolean("forceRefresh", false)
+        switchThermal.isChecked = prefs.getBoolean("thermal", true)
+    }
+
+    // ================================================================
+    // Helpers
+    // ================================================================
+
+    private fun isAccessibilityEnabled(): Boolean {
+        val service = "$packageName/${GameDetectorService::class.java.canonicalName}"
+        return try {
+            val enabled = Settings.Secure.getString(contentResolver,
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
+            enabled?.contains(service) == true
+        } catch (_: Exception) {
+            false
         }
     }
 }

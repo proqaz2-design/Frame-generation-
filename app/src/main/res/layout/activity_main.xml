@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_gradient"
+    android:background="#0D0D0D"
     android:scrollbars="none"
     android:overScrollMode="never"
     android:fillViewport="true">
@@ -12,226 +12,341 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingHorizontal="20dp"
-        android:paddingTop="32dp"
-        android:paddingBottom="40dp">
+        android:paddingHorizontal="16dp"
+        android:paddingTop="24dp"
+        android:paddingBottom="48dp">
 
         <!-- ══════════════════════════════════════ -->
-        <!-- HEADER                                 -->
-        <!-- ══════════════════════════════════════ -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:paddingBottom="24dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="FrameGen"
-                android:textColor="#ffffff"
-                android:textSize="32sp"
-                android:fontFamily="sans-serif-medium"
-                android:letterSpacing="0.05" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="AI Frame Generation"
-                android:textColor="#5a5a8a"
-                android:textSize="13sp"
-                android:fontFamily="sans-serif"
-                android:letterSpacing="0.12"
-                android:paddingTop="2dp" />
-
-            <!-- Accent line under title -->
-            <View
-                android:layout_width="60dp"
-                android:layout_height="3dp"
-                android:background="@drawable/divider_gradient"
-                android:layout_marginTop="12dp" />
-        </LinearLayout>
-
-        <!-- ══════════════════════════════════════ -->
-        <!-- STATUS CARD                            -->
+        <!-- TOP BAR: Logo + Version               -->
         <!-- ══════════════════════════════════════ -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:background="@drawable/card_bg_accent"
-            android:padding="16dp"
             android:gravity="center_vertical"
-            android:layout_marginBottom="16dp">
+            android:paddingBottom="20dp">
 
-            <!-- GPU Temp -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:orientation="vertical"
-                android:gravity="center">
+                android:orientation="vertical">
 
                 <TextView
-                    android:id="@+id/txtGpuTemp"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="--°C"
-                    android:textColor="#00ff88"
+                    android:text="Frame Generation"
+                    android:textColor="#FFFFFF"
                     android:textSize="22sp"
                     android:fontFamily="sans-serif-medium" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="GPU TEMP"
-                    android:textColor="#5a5a8a"
-                    android:textSize="10sp"
-                    android:letterSpacing="0.15"
+                    android:text="Rootless • v1.0.0"
+                    android:textColor="#666666"
+                    android:textSize="12sp"
+                    android:fontFamily="sans-serif"
                     android:paddingTop="2dp" />
+
             </LinearLayout>
 
-            <!-- Divider -->
-            <View
-                android:layout_width="1dp"
-                android:layout_height="40dp"
-                android:background="#1e1e3f" />
-
-            <!-- Display Info -->
+            <!-- Status indicator -->
             <LinearLayout
-                android:layout_width="0dp"
+                android:id="@+id/statusBadge"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
+                android:background="@drawable/badge_inactive"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp"
                 android:gravity="center">
 
-                <TextView
-                    android:id="@+id/txtDisplayInfo"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="-- Hz"
-                    android:textColor="#00d4ff"
-                    android:textSize="22sp"
-                    android:fontFamily="sans-serif-medium" />
+                <View
+                    android:id="@+id/statusDot"
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:background="@drawable/dot_inactive" />
 
                 <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="DISPLAY"
-                    android:textColor="#5a5a8a"
-                    android:textSize="10sp"
-                    android:letterSpacing="0.15"
-                    android:paddingTop="2dp" />
-            </LinearLayout>
-
-            <!-- Divider -->
-            <View
-                android:layout_width="1dp"
-                android:layout_height="40dp"
-                android:background="#1e1e3f" />
-
-            <!-- Service Status Dot -->
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:gravity="center">
-
-                <TextView
-                    android:id="@+id/txtStatusDot"
+                    android:id="@+id/txtStatus"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="OFF"
-                    android:textColor="#555577"
-                    android:textSize="22sp"
-                    android:fontFamily="sans-serif-medium" />
+                    android:textColor="#888888"
+                    android:textSize="11sp"
+                    android:fontFamily="sans-serif-medium"
+                    android:letterSpacing="0.08"
+                    android:paddingStart="6dp" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="STATUS"
-                    android:textColor="#5a5a8a"
-                    android:textSize="10sp"
-                    android:letterSpacing="0.15"
-                    android:paddingTop="2dp" />
             </LinearLayout>
         </LinearLayout>
 
         <!-- ══════════════════════════════════════ -->
-        <!-- GAME SELECTION CARD                    -->
+        <!-- DEVICE INFO CARD                       -->
         <!-- ══════════════════════════════════════ -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@drawable/card_dark"
             android:orientation="vertical"
-            android:background="@drawable/card_bg"
             android:padding="16dp"
             android:layout_marginBottom="12dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="GAME"
-                android:textColor="#5a5a8a"
+                android:text="DEVICE"
+                android:textColor="#555555"
                 android:textSize="11sp"
-                android:letterSpacing="0.2"
                 android:fontFamily="sans-serif-medium"
-                android:paddingBottom="10dp" />
+                android:letterSpacing="0.15"
+                android:paddingBottom="12dp" />
 
-            <Button
-                android:id="@+id/btnSelectGame"
+            <!-- GPU Row -->
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:text="Select Game"
-                android:textColor="#ffffff"
-                android:textSize="15sp"
-                android:textAllCaps="false"
-                android:fontFamily="sans-serif-medium"
-                android:background="@drawable/btn_secondary"
-                android:drawableStart="@android:drawable/ic_menu_search"
-                android:drawablePadding="12dp"
-                android:drawableTint="#5a5a8a"
-                android:paddingHorizontal="16dp"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:stateListAnimator="@null"
-                android:elevation="0dp" />
+                android:paddingBottom="8dp">
 
-            <ListView
-                android:id="@+id/gameListView"
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="GPU"
+                    android:textColor="#888888"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/txtGpuName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Detecting..."
+                    android:textColor="#CCCCCC"
+                    android:textSize="13sp"
+                    android:fontFamily="sans-serif-medium" />
+            </LinearLayout>
+
+            <!-- Driver Row -->
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="200dp"
-                android:visibility="gone"
-                android:background="@drawable/stats_bg"
-                android:divider="#1a1a3a"
-                android:dividerHeight="1dp"
-                android:layout_marginTop="8dp"
-                android:padding="4dp" />
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingBottom="8dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Vulkan Driver"
+                    android:textColor="#888888"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/txtVulkanDriver"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="..."
+                    android:textColor="#CCCCCC"
+                    android:textSize="13sp"
+                    android:fontFamily="sans-serif-medium" />
+            </LinearLayout>
+
+            <!-- Refresh Rate Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingBottom="8dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Refresh Rate"
+                    android:textColor="#888888"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/txtRefreshRate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="60 Hz"
+                    android:textColor="#CCCCCC"
+                    android:textSize="13sp"
+                    android:fontFamily="sans-serif-medium" />
+            </LinearLayout>
+
+            <!-- Resolution Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Resolution"
+                    android:textColor="#888888"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/txtResolution"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="..."
+                    android:textColor="#CCCCCC"
+                    android:textSize="13sp"
+                    android:fontFamily="sans-serif-medium" />
+            </LinearLayout>
+
         </LinearLayout>
 
         <!-- ══════════════════════════════════════ -->
-        <!-- MODE & QUALITY CARD                    -->
+        <!-- COMPATIBILITY CARD                     -->
         <!-- ══════════════════════════════════════ -->
         <LinearLayout
+            android:id="@+id/cardCompat"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@drawable/card_dark"
             android:orientation="vertical"
-            android:background="@drawable/card_bg"
             android:padding="16dp"
             android:layout_marginBottom="12dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="SETTINGS"
-                android:textColor="#5a5a8a"
+                android:text="COMPATIBILITY"
+                android:textColor="#555555"
                 android:textSize="11sp"
-                android:letterSpacing="0.2"
                 android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.15"
                 android:paddingBottom="12dp" />
 
-            <!-- Mode -->
+            <TextView
+                android:id="@+id/txtCompatStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Checking device compatibility..."
+                android:textColor="#AAAAAA"
+                android:textSize="14sp"
+                android:lineSpacingExtra="4dp" />
+
+            <!-- Compatibility items -->
+            <LinearLayout
+                android:id="@+id/compatChecklist"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingTop="8dp">
+
+                <TextView
+                    android:id="@+id/checkVulkan"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="○  Vulkan Support"
+                    android:textColor="#666666"
+                    android:textSize="13sp"
+                    android:paddingVertical="3dp" />
+
+                <TextView
+                    android:id="@+id/checkGpu"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="○  GPU Compatibility"
+                    android:textColor="#666666"
+                    android:textSize="13sp"
+                    android:paddingVertical="3dp" />
+
+                <TextView
+                    android:id="@+id/checkRefresh"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="○  120Hz+ Display"
+                    android:textColor="#666666"
+                    android:textSize="13sp"
+                    android:paddingVertical="3dp" />
+
+                <TextView
+                    android:id="@+id/checkShizuku"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="○  Shizuku / ADB"
+                    android:textColor="#666666"
+                    android:textSize="13sp"
+                    android:paddingVertical="3dp" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- ══════════════════════════════════════ -->
+        <!-- INJECTION METHOD CARD                  -->
+        <!-- ══════════════════════════════════════ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/card_dark"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="INJECTION METHOD"
+                android:textColor="#555555"
+                android:textSize="11sp"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.15"
+                android:paddingBottom="12dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Vulkan layer injection via GPU debug settings. No root required — uses Shizuku or wireless ADB."
+                android:textColor="#777777"
+                android:textSize="12sp"
+                android:lineSpacingExtra="3dp"
+                android:paddingBottom="12dp" />
+
+            <Spinner
+                android:id="@+id/spinnerMethod"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:background="@drawable/spinner_bg"
+                android:popupBackground="#1A1A1A"
+                android:paddingHorizontal="12dp" />
+
+        </LinearLayout>
+
+        <!-- ══════════════════════════════════════ -->
+        <!-- FRAME GENERATION SETTINGS              -->
+        <!-- ══════════════════════════════════════ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/card_dark"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="FRAME GENERATION"
+                android:textColor="#555555"
+                android:textSize="11sp"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.15"
+                android:paddingBottom="16dp" />
+
+            <!-- Mode Selection -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -242,71 +357,454 @@
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="0.35"
-                    android:text="Mode"
-                    android:textColor="#aaaacc"
-                    android:textSize="14sp"
-                    android:fontFamily="sans-serif" />
+                    android:layout_weight="1"
+                    android:text="Interpolation Mode"
+                    android:textColor="#AAAAAA"
+                    android:textSize="14sp" />
 
                 <Spinner
                     android:id="@+id/spinnerMode"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_weight="0.65"
+                    android:layout_width="140dp"
+                    android:layout_height="36dp"
                     android:background="@drawable/spinner_bg"
-                    android:popupBackground="#14142b"
-                    android:paddingHorizontal="12dp" />
+                    android:popupBackground="#1A1A1A"
+                    android:paddingHorizontal="10dp" />
             </LinearLayout>
 
-            <!-- Quality -->
+            <!-- Target FPS -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingBottom="14dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Target FPS"
+                    android:textColor="#AAAAAA"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/txtTargetFps"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="120"
+                    android:textColor="#BB86FC"
+                    android:textSize="14sp"
+                    android:fontFamily="sans-serif-medium"
+                    android:paddingEnd="8dp" />
+            </LinearLayout>
+
+            <SeekBar
+                android:id="@+id/seekTargetFps"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:min="60"
+                android:max="240"
+                android:progress="120"
+                android:progressTint="#BB86FC"
+                android:thumbTint="#BB86FC"
+                android:paddingBottom="14dp" />
+
+            <!-- Quality Slider -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingBottom="14dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Quality"
+                    android:textColor="#AAAAAA"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/txtQuality"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="High"
+                    android:textColor="#BB86FC"
+                    android:textSize="14sp"
+                    android:fontFamily="sans-serif-medium" />
+            </LinearLayout>
+
+            <SeekBar
+                android:id="@+id/seekQuality"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100"
+                android:progress="75"
+                android:progressTint="#BB86FC"
+                android:thumbTint="#BB86FC" />
+
+        </LinearLayout>
+
+        <!-- ══════════════════════════════════════ -->
+        <!-- SELECT GAME CARD                       -->
+        <!-- ══════════════════════════════════════ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/card_dark"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingBottom="12dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="TARGET APP"
+                    android:textColor="#555555"
+                    android:textSize="11sp"
+                    android:fontFamily="sans-serif-medium"
+                    android:letterSpacing="0.15" />
+
+                <Button
+                    android:id="@+id/btnSelectGame"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:text="Select"
+                    android:textColor="#BB86FC"
+                    android:textSize="12sp"
+                    android:background="@drawable/btn_outline"
+                    android:paddingHorizontal="16dp"
+                    android:textAllCaps="false"
+                    android:fontFamily="sans-serif-medium" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/txtSelectedGame"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="No app selected"
+                android:textColor="#666666"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/txtGameInfo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textColor="#555555"
+                android:textSize="12sp"
+                android:paddingTop="4dp"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+        <!-- ══════════════════════════════════════ -->
+        <!-- MAIN TOGGLE BUTTON                     -->
+        <!-- ══════════════════════════════════════ -->
+        <Button
+            android:id="@+id/btnToggle"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="ENABLE FRAME GENERATION"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.05"
+            android:background="@drawable/btn_enable"
+            android:layout_marginBottom="12dp"
+            android:textAllCaps="false" />
+
+        <!-- ══════════════════════════════════════ -->
+        <!-- LIVE STATS CARD                        -->
+        <!-- ══════════════════════════════════════ -->
+        <LinearLayout
+            android:id="@+id/cardStats"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/card_dark"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="LIVE STATS"
+                android:textColor="#555555"
+                android:textSize="11sp"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.15"
+                android:paddingBottom="12dp" />
+
+            <!-- FPS Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingBottom="6dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Output FPS"
+                    android:textColor="#888888"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/txtFps"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="--"
+                    android:textColor="#03DAC5"
+                    android:textSize="13sp"
+                    android:fontFamily="sans-serif-medium" />
+            </LinearLayout>
+
+            <!-- Frame Time Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingBottom="6dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Frame Time"
+                    android:textColor="#888888"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/txtFrameTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="-- ms"
+                    android:textColor="#CCCCCC"
+                    android:textSize="13sp"
+                    android:fontFamily="sans-serif-medium" />
+            </LinearLayout>
+
+            <!-- Generated Frames Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingBottom="6dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Generated"
+                    android:textColor="#888888"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/txtGenerated"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textColor="#CCCCCC"
+                    android:textSize="13sp"
+                    android:fontFamily="sans-serif-medium" />
+            </LinearLayout>
+
+            <!-- Dropped Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingBottom="6dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Dropped"
+                    android:textColor="#888888"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/txtDropped"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textColor="#CCCCCC"
+                    android:textSize="13sp"
+                    android:fontFamily="sans-serif-medium" />
+            </LinearLayout>
+
+            <!-- GPU Temp -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="GPU Temp"
+                    android:textColor="#888888"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/txtGpuTemp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="--°C"
+                    android:textColor="#CCCCCC"
+                    android:textSize="13sp"
+                    android:fontFamily="sans-serif-medium" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- ══════════════════════════════════════ -->
+        <!-- OPTIONS CARD                           -->
+        <!-- ══════════════════════════════════════ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/card_dark"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="OPTIONS"
+                android:textColor="#555555"
+                android:textSize="11sp"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.15"
+                android:paddingBottom="14dp" />
+
+            <!-- FPS Overlay Toggle -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
                 android:paddingBottom="14dp">
 
                 <LinearLayout
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:paddingBottom="8dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Quality"
-                        android:textColor="#aaaacc"
-                        android:textSize="14sp"
-                        android:fontFamily="sans-serif" />
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Performance"
-                        android:textColor="#00d4ff"
-                        android:textSize="11sp"
-                        android:paddingEnd="16dp" />
+                        android:text="FPS Overlay"
+                        android:textColor="#CCCCCC"
+                        android:textSize="14sp" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Quality"
-                        android:textColor="#7c3aed"
-                        android:textSize="11sp" />
+                        android:text="Show floating FPS counter"
+                        android:textColor="#555555"
+                        android:textSize="12sp" />
                 </LinearLayout>
 
-                <SeekBar
-                    android:id="@+id/seekQuality"
-                    android:layout_width="match_parent"
+                <Switch
+                    android:id="@+id/switchFpsOverlay"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:progressTint="#00d4ff"
-                    android:thumbTint="#ffffff"
-                    android:progressBackgroundTint="#2a2a4a"
-                    android:paddingHorizontal="0dp" />
+                    android:thumb="@drawable/switch_thumb"
+                    android:track="@drawable/switch_track" />
             </LinearLayout>
 
-            <!-- Thermal Protection -->
+            <!-- Auto-detect Games Toggle -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingBottom="14dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Auto-detect Games"
+                        android:textColor="#CCCCCC"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Accessibility service for auto game detection"
+                        android:textColor="#555555"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <Switch
+                    android:id="@+id/switchAutoDetect"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:thumb="@drawable/switch_thumb"
+                    android:track="@drawable/switch_track" />
+            </LinearLayout>
+
+            <!-- Force High Refresh Rate -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingBottom="14dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Force High Refresh Rate"
+                        android:textColor="#CCCCCC"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Prevent OS from capping to 60Hz"
+                        android:textColor="#555555"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <Switch
+                    android:id="@+id/switchForceRefresh"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:thumb="@drawable/switch_thumb"
+                    android:track="@drawable/switch_track" />
+            </LinearLayout>
+
+            <!-- Thermal Guard -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -322,17 +820,16 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Thermal Protection"
-                        android:textColor="#aaaacc"
-                        android:textSize="14sp"
-                        android:fontFamily="sans-serif" />
+                        android:text="Thermal Guard"
+                        android:textColor="#CCCCCC"
+                        android:textSize="14sp" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Auto-reduce quality when GPU overheats"
-                        android:textColor="#444466"
-                        android:textSize="11sp" />
+                        android:text="Auto-disable when GPU overheats"
+                        android:textColor="#555555"
+                        android:textSize="12sp" />
                 </LinearLayout>
 
                 <Switch
@@ -343,314 +840,38 @@
                     android:thumb="@drawable/switch_thumb"
                     android:track="@drawable/switch_track" />
             </LinearLayout>
+
         </LinearLayout>
 
         <!-- ══════════════════════════════════════ -->
-        <!-- CONTROL BUTTONS                        -->
+        <!-- INFO CARD                              -->
         <!-- ══════════════════════════════════════ -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="12dp">
-
-            <Button
-                android:id="@+id/btnStart"
-                android:layout_width="0dp"
-                android:layout_height="56dp"
-                android:layout_weight="1"
-                android:text="START"
-                android:textColor="#ffffff"
-                android:textSize="16sp"
-                android:fontFamily="sans-serif-bold"
-                android:letterSpacing="0.08"
-                android:background="@drawable/btn_start"
-                android:layout_marginEnd="6dp"
-                android:stateListAnimator="@null"
-                android:elevation="4dp" />
-
-            <Button
-                android:id="@+id/btnStop"
-                android:layout_width="0dp"
-                android:layout_height="56dp"
-                android:layout_weight="1"
-                android:text="STOP"
-                android:textColor="#ffffff"
-                android:textSize="16sp"
-                android:fontFamily="sans-serif-bold"
-                android:letterSpacing="0.08"
-                android:background="@drawable/btn_stop"
-                android:layout_marginStart="6dp"
-                android:stateListAnimator="@null"
-                android:elevation="4dp" />
-        </LinearLayout>
-
-        <!-- Hidden Surface -->
-        <SurfaceView
-            android:id="@+id/surfaceView"
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:visibility="invisible" />
-
-        <!-- ══════════════════════════════════════ -->
-        <!-- PERFORMANCE CARD                       -->
-        <!-- ══════════════════════════════════════ -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:background="@drawable/card_dark"
             android:orientation="vertical"
-            android:background="@drawable/card_bg"
-            android:padding="16dp"
-            android:layout_marginBottom="12dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="PERFORMANCE"
-                android:textColor="#5a5a8a"
-                android:textSize="11sp"
-                android:letterSpacing="0.2"
-                android:fontFamily="sans-serif-medium"
-                android:paddingBottom="10dp" />
-
-            <TextView
-                android:id="@+id/txtStats"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Waiting for data..."
-                android:textColor="#7a7aaa"
-                android:textSize="12sp"
-                android:fontFamily="monospace"
-                android:background="@drawable/stats_bg"
-                android:padding="14dp"
-                android:lineSpacingExtra="3dp" />
-        </LinearLayout>
-
-        <!-- ══════════════════════════════════════ -->
-        <!-- SECTION: SYSTEM                        -->
-        <!-- ══════════════════════════════════════ -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="3dp"
-            android:background="@drawable/divider_gradient"
-            android:layout_marginVertical="8dp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="SYSTEM"
-            android:textColor="#5a5a8a"
-            android:textSize="11sp"
-            android:letterSpacing="0.25"
-            android:fontFamily="sans-serif-medium"
-            android:paddingVertical="12dp" />
-
-        <!-- ══════════════════════════════════════ -->
-        <!-- SYSTEM TOGGLES CARD                    -->
-        <!-- ══════════════════════════════════════ -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="@drawable/card_bg"
-            android:paddingHorizontal="16dp"
-            android:paddingVertical="6dp"
-            android:layout_marginBottom="12dp">
-
-            <!-- Background Service -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingVertical="14dp">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Background Service"
-                        android:textColor="#e0e0f0"
-                        android:textSize="15sp"
-                        android:fontFamily="sans-serif" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Run in background, auto-detect games"
-                        android:textColor="#444466"
-                        android:textSize="11sp"
-                        android:paddingTop="2dp" />
-                </LinearLayout>
-
-                <Switch
-                    android:id="@+id/switchSystemService"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:thumb="@drawable/switch_thumb"
-                    android:track="@drawable/switch_track" />
-            </LinearLayout>
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="#1a1a3a" />
-
-            <!-- Auto-start on Boot -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingVertical="14dp">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Start on Boot"
-                        android:textColor="#e0e0f0"
-                        android:textSize="15sp"
-                        android:fontFamily="sans-serif" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Launch automatically when device boots"
-                        android:textColor="#444466"
-                        android:textSize="11sp"
-                        android:paddingTop="2dp" />
-                </LinearLayout>
-
-                <Switch
-                    android:id="@+id/switchAutoStart"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:thumb="@drawable/switch_thumb"
-                    android:track="@drawable/switch_track" />
-            </LinearLayout>
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="#1a1a3a" />
-
-            <!-- FPS Overlay -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingVertical="14dp">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="FPS Overlay"
-                        android:textColor="#e0e0f0"
-                        android:textSize="15sp"
-                        android:fontFamily="sans-serif" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Floating FPS counter over games"
-                        android:textColor="#444466"
-                        android:textSize="11sp"
-                        android:paddingTop="2dp" />
-                </LinearLayout>
-
-                <Switch
-                    android:id="@+id/switchFpsOverlay"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:thumb="@drawable/switch_thumb"
-                    android:track="@drawable/switch_track" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- ══════════════════════════════════════ -->
-        <!-- GAME DETECTOR BUTTON                   -->
-        <!-- ══════════════════════════════════════ -->
-        <Button
-            android:id="@+id/btnAccessibility"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:text="Enable Game Detector"
-            android:textColor="#ffffff"
-            android:textSize="14sp"
-            android:fontFamily="sans-serif-medium"
-            android:textAllCaps="false"
-            android:letterSpacing="0.02"
-            android:background="@drawable/btn_warning"
-            android:stateListAnimator="@null"
-            android:elevation="2dp"
-            android:layout_marginBottom="6dp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Uses Accessibility to detect game launches. Does not read screen content."
-            android:textColor="#333355"
-            android:textSize="11sp"
-            android:fontFamily="sans-serif"
-            android:gravity="center"
-            android:paddingHorizontal="16dp"
-            android:paddingBottom="16dp" />
-
-        <!-- ══════════════════════════════════════ -->
-        <!-- SERVICE STATUS CARD                    -->
-        <!-- ══════════════════════════════════════ -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="@drawable/card_bg"
             android:padding="16dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="SERVICE LOG"
-                android:textColor="#5a5a8a"
+                android:text="HOW IT WORKS"
+                android:textColor="#555555"
                 android:textSize="11sp"
-                android:letterSpacing="0.2"
                 android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.15"
                 android:paddingBottom="10dp" />
 
             <TextView
-                android:id="@+id/txtServiceStatus"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Service not running"
-                android:textColor="#5a5a8a"
+                android:text="Frame Generation intercepts game frames via Vulkan layer injection and creates interpolated frames between them. This effectively doubles your perceived FPS.\n\nNo root required — uses Android's GPU debug layer mechanism via Shizuku or wireless ADB.\n\n⚠ Some games may flag this as cheating. Use at your own risk."
+                android:textColor="#666666"
                 android:textSize="12sp"
-                android:fontFamily="monospace"
-                android:background="@drawable/stats_bg"
-                android:padding="14dp"
-                android:lineSpacingExtra="3dp" />
-        </LinearLayout>
+                android:lineSpacingExtra="4dp" />
 
-        <!-- Bottom spacing -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="20dp" />
+        </LinearLayout>
 
     </LinearLayout>
 </ScrollView>
