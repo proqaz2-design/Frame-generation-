@@ -58,8 +58,10 @@ object ShizukuShell {
 
     /**
      * Execute a shell command via Shizuku with ADB-level privileges.
-     * This runs the command as the shell user (UID 2000), which has
-     * permission to modify global settings, install packages, etc.
+     * Uses Shizuku's binder to run the command as shell user (UID 2000).
+     *
+     * Since Shizuku.newProcess() is private in API 13.1.5,
+     * we use reflection or the IShizukuService binder directly.
      */
     fun exec(command: String): Result {
         if (!isAvailable()) {
@@ -67,11 +69,64 @@ object ShizukuShell {
         }
 
         return try {
-            val process = Shizuku.newProcess(
-                arrayOf("sh", "-c", command),
-                null,
-                null
-            )
+            // Approach 1: Try Shizuku.newProcess via reflection
+            // (it exists but is marked private in some builds)
+            val process = try {
+                val method = Shizuku::class.java.getDeclaredMethod(
+                    "newProcess",
+                    Array<String>::class.java,
+                    Array<String>::class.java,
+                    String::class.java
+                )
+                method.isAccessible = true
+                method.invoke(null,
+                    arrayOf("sh", "-c", command),
+                    null,
+                    null
+                ) as Process
+            } catch (reflectError: Exception) {
+                Log.w(TAG, "Shizuku.newProcess reflection failed, trying binder", reflectError)
+
+                // Approach 2: Try via Shizuku binder using hidden API bypass
+                try {
+                    val binderMethod = Shizuku::class.java.getDeclaredMethod("getBinder")
+                    binderMethod.isAccessible = true
+                    val binder = binderMethod.invoke(null)
+                    if (binder != null) {
+                        // IShizukuService.newProcess via AIDL
+                        val serviceClass = Class.forName("rikka.shizuku.server.IShizukuService\$Stub")
+                        val asInterface = serviceClass.getDeclaredMethod("asInterface",
+                            android.os.IBinder::class.java)
+                        val service = asInterface.invoke(null, binder)
+                        val newProcessMethod = service!!.javaClass.getDeclaredMethod(
+                            "newProcess",
+                            Array<String>::class.java,
+                            Array<String>::class.java,
+                            String::class.java
+                        )
+                        val remoteProcess = newProcessMethod.invoke(service,
+                            arrayOf("sh", "-c", command), null, null)
+
+                        // Wrap in a Process-like object
+                        val getInputStream = remoteProcess!!.javaClass.getMethod("getInputStream")
+                        val getErrorStream = remoteProcess.javaClass.getMethod("getErrorStream")
+                        val waitFor = remoteProcess.javaClass.getMethod("waitFor")
+
+                        val stdout = BufferedReader(InputStreamReader(
+                            getInputStream.invoke(remoteProcess) as java.io.InputStream)).readText()
+                        val stderr = BufferedReader(InputStreamReader(
+                            getErrorStream.invoke(remoteProcess) as java.io.InputStream)).readText()
+                        val exitCode = waitFor.invoke(remoteProcess) as Int
+
+                        return Result(exitCode, stdout.trim(), stderr.trim())
+                    }
+                    throw Exception("Binder is null")
+                } catch (binderError: Exception) {
+                    Log.w(TAG, "Shizuku binder approach failed", binderError)
+                    // Last resort: plain Runtime.exec (will only work for non-privileged commands)
+                    Runtime.getRuntime().exec(arrayOf("sh", "-c", command))
+                }
+            }
 
             val stdout = BufferedReader(InputStreamReader(process.inputStream)).readText()
             val stderr = BufferedReader(InputStreamReader(process.errorStream)).readText()
