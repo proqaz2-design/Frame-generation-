@@ -22,6 +22,50 @@
 #endif
 #endif
 
+// ============================================================
+// Vulkan Layer dispatch types — not in standard NDK headers.
+// These are normally in vulkan/vk_layer.h from the Vulkan SDK.
+// ============================================================
+
+#ifndef VK_LAYER_LINK_INFO
+
+typedef enum VkLayerFunction_ {
+    VK_LAYER_LINK_INFO = 0,
+    VK_LAYER_DEVICE_INFO = 1
+} VkLayerFunction;
+
+typedef struct VkLayerInstanceLink_ {
+    struct VkLayerInstanceLink_* pNext;
+    PFN_vkGetInstanceProcAddr pfnNextGetInstanceProcAddr;
+    PFN_vkGetPhysicalDeviceProcAddr pfnNextGetPhysicalDeviceProcAddr;
+} VkLayerInstanceLink;
+
+typedef struct VkLayerInstanceCreateInfo_ {
+    VkStructureType sType;
+    const void* pNext;
+    VkLayerFunction function;
+    union {
+        VkLayerInstanceLink* pLayerInfo;
+    } u;
+} VkLayerInstanceCreateInfo;
+
+typedef struct VkLayerDeviceLink_ {
+    struct VkLayerDeviceLink_* pNext;
+    PFN_vkGetInstanceProcAddr pfnNextGetInstanceProcAddr;
+    PFN_vkGetDeviceProcAddr pfnNextGetDeviceProcAddr;
+} VkLayerDeviceLink;
+
+typedef struct VkLayerDeviceCreateInfo_ {
+    VkStructureType sType;
+    const void* pNext;
+    VkLayerFunction function;
+    union {
+        VkLayerDeviceLink* pLayerInfo;
+    } u;
+} VkLayerDeviceCreateInfo;
+
+#endif // VK_LAYER_LINK_INFO
+
 namespace framegen {
 
 // Callback type: called with source image + dimensions when a frame is captured
