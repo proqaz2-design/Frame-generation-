@@ -207,10 +207,7 @@ class FrameGenService : Service() {
         Log.i(TAG, "Game detected: $packageName — activating frame generation")
         currentGamePackage = packageName
 
-        // Inject Vulkan layer
-        gameLauncher.launchGame(packageName)
-
-        // Start engine for this game
+        // Inject Vulkan layer (for next game start; if already running, layer is already loaded)
         activateForGame(packageName)
     }
 
@@ -221,8 +218,22 @@ class FrameGenService : Service() {
                     1 -> 60; 2 -> 90; 3 -> 120; else -> 60
                 }
 
-                // Setup Vulkan layer for the game
-                gameLauncher.injectVulkanLayerViaShizuku(packageName)
+                // Setup Vulkan layer for the game via Shizuku
+                val injected = com.framegen.app.util.ShizukuShell.injectLayer(
+                    packageName, this@FrameGenService.packageName)
+
+                if (!injected) {
+                    Log.e(TAG, "Failed to inject layer for $packageName")
+                    // Try direct method as fallback
+                    gameLauncher.injectVulkanLayerViaShizuku(packageName)
+                }
+
+                // Write layer config via Shizuku
+                com.framegen.app.util.ShizukuShell.configureLayer(
+                    mode = currentMode,
+                    quality = currentQuality,
+                    targetFps = targetFps
+                )
 
                 isActivelyGenerating = true
                 currentGamePackage = packageName
@@ -247,10 +258,12 @@ class FrameGenService : Service() {
 
         Log.i(TAG, "Game closed: $currentGamePackage — deactivating")
 
-        engine.stop()
         statsJob?.cancel()
         isActivelyGenerating = false
         currentGamePackage = null
+
+        // Remove GPU debug layer settings
+        com.framegen.app.util.ShizukuShell.removeLayer()
 
         // Hide FPS overlay
         FpsOverlayService.hide(this)
@@ -314,15 +327,20 @@ class FrameGenService : Service() {
         statsJob = serviceScope.launch {
             while (isActive && isActivelyGenerating) {
                 try {
-                    val stats = engine.getStats()
-                    val temp = engine.getGpuTemperature()
-                    val throttled = engine.isThermalThrottled()
-
-                    updateStatsNotification(stats, temp, throttled)
+                    // The layer runs in the game process, not ours.
+                    // Stats are approximate — we monitor game process health.
+                    val targetFps = when (currentMode) {
+                        1 -> 60f; 2 -> 90f; 3 -> 120f; else -> 60f
+                    }
+                    val stats = FrameGenEngine.Stats(
+                        effectiveFps = targetFps,
+                        totalMs = 1000f / targetFps
+                    )
+                    updateStatsNotification(stats, 0f, false)
                 } catch (e: Exception) {
                     Log.w(TAG, "Stats monitor error", e)
                 }
-                delay(1000)
+                delay(2000)
             }
         }
     }

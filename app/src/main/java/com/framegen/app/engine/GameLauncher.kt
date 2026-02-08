@@ -104,8 +104,8 @@ class GameLauncher(private val context: Context) {
      */
     private fun setupVulkanLayer(targetPackage: String) {
         try {
-            // Try Shizuku first (programmatic ADB)
-            if (setupViaShizuku(targetPackage)) {
+            // Use ShizukuShell for proper ADB-level access
+            if (com.framegen.app.util.ShizukuShell.injectLayer(targetPackage, context.packageName)) {
                 Log.i(TAG, "Vulkan layer configured via Shizuku")
                 return
             }
@@ -123,44 +123,17 @@ class GameLauncher(private val context: Context) {
     }
 
     /**
-     * Setup Vulkan layer using Shizuku (ADB over app).
+     * Setup Vulkan layer using Shizuku — proper ADB-level shell.
      */
     fun injectVulkanLayerViaShizuku(targetPackage: String): Boolean {
-        return setupViaShizuku(targetPackage)
+        return com.framegen.app.util.ShizukuShell.injectLayer(targetPackage, context.packageName)
     }
 
-    private fun setupViaShizuku(targetPackage: String): Boolean {
-        return try {
-            // Check if Shizuku is available and authorized
-            if (!rikka.shizuku.Shizuku.pingBinder()) {
-                Log.w(TAG, "Shizuku not running")
-                return false
-            }
-
-            if (rikka.shizuku.Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED) {
-                Log.w(TAG, "Shizuku permission not granted")
-                return false
-            }
-
-            // Execute settings commands via Shizuku
-            val commands = arrayOf(
-                "settings put global enable_gpu_debug_layers 1",
-                "settings put global gpu_debug_app $targetPackage",
-                "settings put global gpu_debug_layers VK_LAYER_FRAMEGEN_capture",
-                "settings put global gpu_debug_layer_app ${context.packageName}"
-            )
-
-            for (cmd in commands) {
-                val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", cmd))
-                process.waitFor()
-                Log.d(TAG, "Shizuku: $cmd -> ${process.exitValue()}")
-            }
-
-            true
-        } catch (e: Exception) {
-            Log.w(TAG, "Shizuku setup failed", e)
-            false
-        }
+    /**
+     * Remove Vulkan layer injection settings.
+     */
+    fun removeVulkanLayer(): Boolean {
+        return com.framegen.app.util.ShizukuShell.removeLayer()
     }
 
     /**

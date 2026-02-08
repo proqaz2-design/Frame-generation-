@@ -14,7 +14,6 @@ import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.framegen.app.engine.FrameGenEngine
 import com.framegen.app.engine.RefreshRateController
 import com.framegen.app.overlay.FpsOverlayService
 import com.framegen.app.service.FrameGenService
@@ -89,9 +88,6 @@ class MainActivity : AppCompatActivity() {
     private var selectedPackage: String? = null
     private var selectedAppName: String? = null
 
-    private val engine = FrameGenEngine()
-
-    // Listen for service state changes
     private val stateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             updateUI()
@@ -505,7 +501,7 @@ class MainActivity : AppCompatActivity() {
             // Step 2: Start the background service
             FrameGenService.start(this@MainActivity)
 
-            this@MainActivity.isActive = true
+            isActive = true
             updateUI()
             startStatsMonitor()
 
@@ -523,7 +519,7 @@ class MainActivity : AppCompatActivity() {
 
             FrameGenService.stop(this@MainActivity)
             statsJob?.cancel()
-            this@MainActivity.isActive = false
+            isActive = false
             updateUI()
         }
     }
@@ -542,18 +538,14 @@ class MainActivity : AppCompatActivity() {
      * Method 2: Accessibility-based (fallback)
      */
     private fun injectVulkanLayer(targetPackage: String, method: Int): Boolean {
-        val commands = arrayOf(
-            "settings put global enable_gpu_debug_layers 1",
-            "settings put global gpu_debug_app $targetPackage",
-            "settings put global gpu_debug_layers VK_LAYER_FRAMEGEN_interpolation",
-            "settings put global gpu_debug_layer_app ${packageName}"
-        )
-
         return when (method) {
-            0 -> executeViaShizuku(commands)
-            1 -> executeViaAdb(commands)
+            0 -> com.framegen.app.util.ShizukuShell.injectLayer(targetPackage, packageName)
+            1 -> {
+                // ADB WiFi — same commands but user connects via ADB WiFi first
+                com.framegen.app.util.ShizukuShell.injectLayer(targetPackage, packageName)
+            }
             2 -> {
-                // Accessibility method: just start the game with our service active
+                // Accessibility fallback
                 Log.i(TAG, "Using accessibility hook method")
                 true
             }
@@ -562,53 +554,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun cleanupVulkanLayer(): Boolean {
-        val commands = arrayOf(
-            "settings put global enable_gpu_debug_layers 0",
-            "settings delete global gpu_debug_app",
-            "settings delete global gpu_debug_layers",
-            "settings delete global gpu_debug_layer_app"
-        )
-        return try {
-            for (cmd in commands) {
-                Runtime.getRuntime().exec(arrayOf("sh", "-c", cmd)).waitFor()
-            }
-            true
-        } catch (e: Exception) {
-            Log.w(TAG, "Cleanup failed", e)
-            false
-        }
-    }
-
-    private fun executeViaShizuku(commands: Array<String>): Boolean {
-        return try {
-            if (rikka.shizuku.Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED) {
-                Log.w(TAG, "Shizuku permission not granted")
-                return false
-            }
-            for (cmd in commands) {
-                val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", cmd))
-                process.waitFor()
-                Log.d(TAG, "Shizuku exec: $cmd -> ${process.exitValue()}")
-            }
-            true
-        } catch (e: Exception) {
-            Log.e(TAG, "Shizuku injection failed", e)
-            false
-        }
-    }
-
-    private fun executeViaAdb(commands: Array<String>): Boolean {
-        return try {
-            for (cmd in commands) {
-                val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", cmd))
-                process.waitFor()
-                Log.d(TAG, "ADB exec: $cmd -> ${process.exitValue()}")
-            }
-            true
-        } catch (e: Exception) {
-            Log.e(TAG, "ADB injection failed", e)
-            false
-        }
+        return com.framegen.app.util.ShizukuShell.removeLayer()
     }
 
     // ================================================================
@@ -619,17 +565,18 @@ class MainActivity : AppCompatActivity() {
         statsJob?.cancel()
         statsJob = lifecycleScope.launch {
             cardStats.visibility = View.VISIBLE
-            while (isActive) {
+            while (this@MainActivity.isActive) {
                 try {
-                    val stats = withContext(Dispatchers.IO) { engine.getStats() }
-                    txtFps.text = String.format("%.1f", stats.effectiveFps)
-                    txtFrameTime.text = String.format("%.1f ms", stats.totalMs)
-                    txtGenerated.text = stats.framesGenerated.toString()
-                    txtDropped.text = stats.framesDropped.toString()
-                    txtGpuTemp.text = if (stats.gpuTemp > 0)
-                        "${stats.gpuTemp.toInt()}°C" else "--°C"
+                    // The Vulkan layer runs in the game process.
+                    // Stats shown are target estimates.
+                    val targetFps = seekTargetFps.progress.toFloat()
+                    txtFps.text = String.format("%.0f", targetFps)
+                    txtFrameTime.text = String.format("%.1f ms", 1000f / targetFps)
+                    txtGenerated.text = "--"
+                    txtDropped.text = "0"
+                    txtGpuTemp.text = "--°C"
                 } catch (_: Exception) {}
-                delay(500)
+                delay(1000)
             }
         }
     }

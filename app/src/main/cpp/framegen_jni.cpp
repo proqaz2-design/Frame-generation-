@@ -6,7 +6,6 @@
  */
 
 #include "framegen_types.h"
-#include "vulkan/vulkan_layer.h"
 #include "vulkan/vulkan_capture.h"
 #include "vulkan/vulkan_compute.h"
 #include "interpolation/rife_engine.h"
@@ -304,18 +303,6 @@ Java_com_framegen_app_engine_FrameGenEngine_nativeInit(
         return JNI_FALSE;
     }
 
-    // Hook the Vulkan layer for frame capture
-    VulkanLayer::instance().setFrameCaptureCallback(
-        [](VkDevice device, VkQueue queue, VkImage srcImage,
-           VkFormat format, uint32_t w, uint32_t h, uint64_t frameIndex) {
-            if (g_engine.capture && g_engine.presenter) {
-                auto frame = g_engine.capture->captureFrame(
-                    queue, srcImage, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, frameIndex);
-                g_engine.presenter->onFrameCaptured(frame);
-            }
-        }
-    );
-
     g_engine.initialized = true;
     LOGI("=== FrameGen Engine Ready ===");
     return JNI_TRUE;
@@ -328,7 +315,6 @@ JNIEXPORT void JNICALL
 Java_com_framegen_app_engine_FrameGenEngine_nativeStart(JNIEnv* env, jobject thiz) {
     if (!g_engine.initialized) return;
 
-    VulkanLayer::instance().setEnabled(true);
     g_engine.presenter->start();
 
     LOGI("FrameGen: Started");
@@ -341,7 +327,6 @@ JNIEXPORT void JNICALL
 Java_com_framegen_app_engine_FrameGenEngine_nativeStop(JNIEnv* env, jobject thiz) {
     if (!g_engine.initialized) return;
 
-    VulkanLayer::instance().setEnabled(false);
     g_engine.presenter->stop();
 
     LOGI("FrameGen: Stopped");

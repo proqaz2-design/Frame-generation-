@@ -1,9 +1,15 @@
 /**
- * Vulkan Layer — Intercepts vkQueuePresentKHR to capture game frames.
+ * FrameGen Vulkan Layer — SELF-CONTAINED frame generation layer.
  *
- * This is an implicit Vulkan layer that gets loaded when a game runs
- * inside the FrameGen sandbox. It hooks into the present call to
- * extract the final rendered frame before it goes to the display.
+ * This is an implicit Vulkan layer loaded into games via Android's
+ * gpu_debug_layers mechanism. It does ALL work internally:
+ *
+ * 1. Hooks vkCreateSwapchainKHR → tracks swapchain images + creates staging
+ * 2. Hooks vkQueuePresentKHR → captures frames + inserts interpolated frames
+ * 3. Uses compute shaders for frame blending/interpolation
+ *
+ * The app only configures gpu_debug_layers via Shizuku.
+ * This runs entirely inside the GAME's process.
  */
 
 #pragma once
@@ -12,7 +18,9 @@
 #include <mutex>
 #include <atomic>
 #include <unordered_map>
-#include <functional>
+#include <vector>
+#include <android/log.h>
+#include <chrono>
 
 #ifndef VK_LAYER_EXPORT
 #if defined(__GNUC__) && __GNUC__ >= 4
@@ -22,11 +30,15 @@
 #endif
 #endif
 
-// ============================================================
-// Vulkan Layer dispatch types — not in standard NDK headers.
-// These are normally in vulkan/vk_layer.h from the Vulkan SDK.
-// ============================================================
+#define FG_TAG "FrameGenLayer"
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO,  FG_TAG, __VA_ARGS__)
+#define LOGW(...) __android_log_print(ANDROID_LOG_WARN,  FG_TAG, __VA_ARGS__)
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, FG_TAG, __VA_ARGS__)
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, FG_TAG, __VA_ARGS__)
 
+// ============================================================
+// Vulkan Layer dispatch types — not in standard NDK headers
+// ============================================================
 #ifndef VK_LAYER_LINK_INFO
 
 typedef enum VkLayerFunction_ {
@@ -37,7 +49,7 @@ typedef enum VkLayerFunction_ {
 typedef struct VkLayerInstanceLink_ {
     struct VkLayerInstanceLink_* pNext;
     PFN_vkGetInstanceProcAddr pfnNextGetInstanceProcAddr;
-    PFN_vkVoidFunction pfnNextGetPhysicalDeviceProcAddr;  // PFN_vkGetPhysicalDeviceProcAddr not in NDK
+    PFN_vkVoidFunction pfnNextGetPhysicalDeviceProcAddr;
 } VkLayerInstanceLink;
 
 typedef struct VkLayerInstanceCreateInfo_ {
@@ -68,159 +80,184 @@ typedef struct VkLayerDeviceCreateInfo_ {
 
 namespace framegen {
 
-// Callback type: called with source image + dimensions when a frame is captured
-using FrameCaptureCallback = std::function<void(
-    VkDevice device,
-    VkQueue queue,
-    VkImage srcImage,
-    VkFormat format,
-    uint32_t width,
-    uint32_t height,
-    uint64_t frameIndex
-)>;
-
 class VulkanLayer {
 public:
     static VulkanLayer& instance();
 
-    // Layer lifecycle
-    VkResult onCreateInstance(
-        const VkInstanceCreateInfo* pCreateInfo,
-        const VkAllocationCallbacks* pAllocator,
-        VkInstance* pInstance
-    );
-
+    // ─── Lifecycle ──────────────────────────────────
+    VkResult onCreateInstance(const VkInstanceCreateInfo* pCreateInfo,
+        const VkAllocationCallbacks* pAllocator, VkInstance* pInstance);
     void onDestroyInstance(VkInstance instance, const VkAllocationCallbacks* pAllocator);
 
-    VkResult onCreateDevice(
-        VkPhysicalDevice physicalDevice,
+    VkResult onCreateDevice(VkPhysicalDevice physicalDevice,
         const VkDeviceCreateInfo* pCreateInfo,
-        const VkAllocationCallbacks* pAllocator,
-        VkDevice* pDevice
-    );
-
+        const VkAllocationCallbacks* pAllocator, VkDevice* pDevice);
     void onDestroyDevice(VkDevice device, const VkAllocationCallbacks* pAllocator);
 
-    // The key hook — intercept frame presentation
+    // ─── Swapchain hooks ────────────────────────────
+    VkResult onCreateSwapchain(VkDevice device,
+        const VkSwapchainCreateInfoKHR* pCreateInfo,
+        const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain);
+    void onDestroySwapchain(VkDevice device, VkSwapchainKHR swapchain,
+        const VkAllocationCallbacks* pAllocator);
+
+    // ─── Frame generation on present ────────────────
     VkResult onQueuePresent(VkQueue queue, const VkPresentInfoKHR* pPresentInfo);
 
-    // Register callback for captured frames
-    void setFrameCaptureCallback(FrameCaptureCallback callback);
-
-    // Control
-    void setEnabled(bool enabled) { enabled_ = enabled; }
-    bool isEnabled() const { return enabled_; }
-
-    // Dispatch table management
+    // ─── Dispatch ───────────────────────────────────
     PFN_vkVoidFunction getDeviceProcAddr(VkDevice device, const char* pName);
     PFN_vkVoidFunction getInstanceProcAddr(VkInstance instance, const char* pName);
+
+    void setEnabled(bool e) { enabled_ = e; }
 
 private:
     VulkanLayer() = default;
 
+    // ─── Staging image for frame capture ────────────
+    struct StagingImage {
+        VkImage image = VK_NULL_HANDLE;
+        VkDeviceMemory memory = VK_NULL_HANDLE;
+        bool valid = false;
+    };
+
+    struct SwapchainData {
+        VkSwapchainKHR handle = VK_NULL_HANDLE;
+        std::vector<VkImage> images;
+        VkFormat format = VK_FORMAT_UNDEFINED;
+        uint32_t width = 0, height = 0;
+    };
+
     struct DeviceData {
         VkDevice device = VK_NULL_HANDLE;
         VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+        uint32_t graphicsFamily = 0;
         VkQueue graphicsQueue = VK_NULL_HANDLE;
-        uint32_t graphicsQueueFamilyIndex = 0;
-        VkCommandPool commandPool = VK_NULL_HANDLE;
+        VkCommandPool cmdPool = VK_NULL_HANDLE;
+        VkCommandBuffer cmdBuf = VK_NULL_HANDLE;
+        VkFence fence = VK_NULL_HANDLE;
 
-        // Original dispatch
+        // Swapchain tracking
+        std::unordered_map<uint64_t, SwapchainData> swapchains;
+
+        // Frame capture: double-buffer staging
+        StagingImage prevFrame;
+        StagingImage curFrame;
+        bool hasPrev = false;
+        uint32_t captureW = 0, captureH = 0;
+        VkFormat captureFormat = VK_FORMAT_UNDEFINED;
+
+        // Performance
+        uint64_t frameCount = 0;
+        uint64_t interpCount = 0;
+
+        // ─── Next-layer dispatch table ──────────────
         PFN_vkGetDeviceProcAddr fpGetDeviceProcAddr = nullptr;
         PFN_vkDestroyDevice fpDestroyDevice = nullptr;
         PFN_vkQueuePresentKHR fpQueuePresentKHR = nullptr;
+        PFN_vkCreateSwapchainKHR fpCreateSwapchainKHR = nullptr;
+        PFN_vkDestroySwapchainKHR fpDestroySwapchainKHR = nullptr;
+        PFN_vkGetSwapchainImagesKHR fpGetSwapchainImagesKHR = nullptr;
+        PFN_vkAcquireNextImageKHR fpAcquireNextImageKHR = nullptr;
+        PFN_vkQueueSubmit fpQueueSubmit = nullptr;
+        PFN_vkQueueWaitIdle fpQueueWaitIdle = nullptr;
         PFN_vkCreateCommandPool fpCreateCommandPool = nullptr;
         PFN_vkAllocateCommandBuffers fpAllocateCommandBuffers = nullptr;
+        PFN_vkFreeCommandBuffers fpFreeCommandBuffers = nullptr;
         PFN_vkBeginCommandBuffer fpBeginCommandBuffer = nullptr;
         PFN_vkEndCommandBuffer fpEndCommandBuffer = nullptr;
         PFN_vkCmdCopyImage fpCmdCopyImage = nullptr;
+        PFN_vkCmdBlitImage fpCmdBlitImage = nullptr;
         PFN_vkCmdPipelineBarrier fpCmdPipelineBarrier = nullptr;
-        PFN_vkQueueSubmit fpQueueSubmit = nullptr;
-        PFN_vkQueueWaitIdle fpQueueWaitIdle = nullptr;
-        PFN_vkFreeCommandBuffers fpFreeCommandBuffers = nullptr;
         PFN_vkCreateImage fpCreateImage = nullptr;
         PFN_vkDestroyImage fpDestroyImage = nullptr;
         PFN_vkAllocateMemory fpAllocateMemory = nullptr;
         PFN_vkFreeMemory fpFreeMemory = nullptr;
         PFN_vkBindImageMemory fpBindImageMemory = nullptr;
         PFN_vkGetImageMemoryRequirements fpGetImageMemoryRequirements = nullptr;
-
-        // Swapchain info
-        uint32_t swapchainWidth = 0;
-        uint32_t swapchainHeight = 0;
-        VkFormat swapchainFormat = VK_FORMAT_UNDEFINED;
+        PFN_vkCreateFence fpCreateFence = nullptr;
+        PFN_vkDestroyFence fpDestroyFence = nullptr;
+        PFN_vkWaitForFences fpWaitForFences = nullptr;
+        PFN_vkResetFences fpResetFences = nullptr;
+        PFN_vkCreateSemaphore fpCreateSemaphore = nullptr;
+        PFN_vkDestroySemaphore fpDestroySemaphore = nullptr;
+        PFN_vkResetCommandBuffer fpResetCommandBuffer = nullptr;
+        PFN_vkDeviceWaitIdle fpDeviceWaitIdle = nullptr;
     };
 
     struct InstanceData {
         VkInstance instance = VK_NULL_HANDLE;
         PFN_vkGetInstanceProcAddr fpGetInstanceProcAddr = nullptr;
         PFN_vkDestroyInstance fpDestroyInstance = nullptr;
+        PFN_vkGetPhysicalDeviceMemoryProperties fpGetPhysMemProps = nullptr;
+        PFN_vkGetPhysicalDeviceQueueFamilyProperties fpGetPhysQueueFamilyProps = nullptr;
     };
+
+    // ─── Helpers ────────────────────────────────────
+    void* getKey(void* handle) { return *(void**)handle; }
+    DeviceData& getDeviceData(void* key);
+    InstanceData& getInstanceData(void* key);
+
+    bool createStagingImage(DeviceData& dev, StagingImage& img,
+        uint32_t w, uint32_t h, VkFormat format);
+    void destroyStagingImage(DeviceData& dev, StagingImage& img);
+    void ensureStaging(DeviceData& dev, uint32_t w, uint32_t h, VkFormat fmt);
+
+    uint32_t findMemoryType(DeviceData& dev, uint32_t filter,
+        VkMemoryPropertyFlags props);
+
+    void transitionImage(VkCommandBuffer cmd, DeviceData& dev, VkImage image,
+        VkImageLayout oldL, VkImageLayout newL,
+        VkAccessFlags srcA, VkAccessFlags dstA,
+        VkPipelineStageFlags srcS, VkPipelineStageFlags dstS);
+
+    void copyImage(VkCommandBuffer cmd, DeviceData& dev,
+        VkImage src, VkImageLayout srcLayout,
+        VkImage dst, VkImageLayout dstLayout,
+        uint32_t w, uint32_t h);
+
+    void blitImage(VkCommandBuffer cmd, DeviceData& dev,
+        VkImage src, VkImage dst,
+        uint32_t w, uint32_t h);
 
     std::mutex mutex_;
     std::unordered_map<void*, DeviceData> devices_;
     std::unordered_map<void*, InstanceData> instances_;
 
-    FrameCaptureCallback captureCallback_;
-    std::atomic<bool> enabled_{false};
-    std::atomic<uint64_t> frameCounter_{0};
-
-    // Helpers
-    void* getKey(void* handle) { return *(void**)handle; }
-    DeviceData& getDeviceData(void* key);
-    InstanceData& getInstanceData(void* key);
+    std::atomic<bool> enabled_{true};
+    std::atomic<uint64_t> totalFrames_{0};
+    std::atomic<uint64_t> totalInterp_{0};
 };
 
 } // namespace framegen
 
-// ============================================================
-// Vulkan Layer entry points (extern "C")
-// ============================================================
+// ─── C entry points ─────────────────────────────────────
 extern "C" {
-
 VK_LAYER_EXPORT VkResult VKAPI_CALL framegen_CreateInstance(
-    const VkInstanceCreateInfo* pCreateInfo,
-    const VkAllocationCallbacks* pAllocator,
-    VkInstance* pInstance);
-
+    const VkInstanceCreateInfo*, const VkAllocationCallbacks*, VkInstance*);
 VK_LAYER_EXPORT void VKAPI_CALL framegen_DestroyInstance(
-    VkInstance instance,
-    const VkAllocationCallbacks* pAllocator);
-
+    VkInstance, const VkAllocationCallbacks*);
 VK_LAYER_EXPORT VkResult VKAPI_CALL framegen_CreateDevice(
-    VkPhysicalDevice physicalDevice,
-    const VkDeviceCreateInfo* pCreateInfo,
-    const VkAllocationCallbacks* pAllocator,
-    VkDevice* pDevice);
-
+    VkPhysicalDevice, const VkDeviceCreateInfo*,
+    const VkAllocationCallbacks*, VkDevice*);
 VK_LAYER_EXPORT void VKAPI_CALL framegen_DestroyDevice(
-    VkDevice device,
-    const VkAllocationCallbacks* pAllocator);
-
+    VkDevice, const VkAllocationCallbacks*);
+VK_LAYER_EXPORT VkResult VKAPI_CALL framegen_CreateSwapchainKHR(
+    VkDevice, const VkSwapchainCreateInfoKHR*,
+    const VkAllocationCallbacks*, VkSwapchainKHR*);
+VK_LAYER_EXPORT void VKAPI_CALL framegen_DestroySwapchainKHR(
+    VkDevice, VkSwapchainKHR, const VkAllocationCallbacks*);
 VK_LAYER_EXPORT VkResult VKAPI_CALL framegen_QueuePresentKHR(
-    VkQueue queue,
-    const VkPresentInfoKHR* pPresentInfo);
-
+    VkQueue, const VkPresentInfoKHR*);
 VK_LAYER_EXPORT PFN_vkVoidFunction VKAPI_CALL framegen_GetDeviceProcAddr(
-    VkDevice device, const char* pName);
-
+    VkDevice, const char*);
 VK_LAYER_EXPORT PFN_vkVoidFunction VKAPI_CALL framegen_GetInstanceProcAddr(
-    VkInstance instance, const char* pName);
-
-// Layer enumeration
+    VkInstance, const char*);
 VK_LAYER_EXPORT VkResult VKAPI_CALL framegen_EnumerateInstanceLayerProperties(
-    uint32_t* pPropertyCount, VkLayerProperties* pProperties);
-
+    uint32_t*, VkLayerProperties*);
 VK_LAYER_EXPORT VkResult VKAPI_CALL framegen_EnumerateDeviceLayerProperties(
-    VkPhysicalDevice physicalDevice,
-    uint32_t* pPropertyCount, VkLayerProperties* pProperties);
-
+    VkPhysicalDevice, uint32_t*, VkLayerProperties*);
 VK_LAYER_EXPORT VkResult VKAPI_CALL framegen_EnumerateInstanceExtensionProperties(
-    const char* pLayerName, uint32_t* pPropertyCount,
-    VkExtensionProperties* pProperties);
-
+    const char*, uint32_t*, VkExtensionProperties*);
 VK_LAYER_EXPORT VkResult VKAPI_CALL framegen_EnumerateDeviceExtensionProperties(
-    VkPhysicalDevice physicalDevice, const char* pLayerName,
-    uint32_t* pPropertyCount, VkExtensionProperties* pProperties);
-
+    VkPhysicalDevice, const char*, uint32_t*, VkExtensionProperties*);
 } // extern "C"

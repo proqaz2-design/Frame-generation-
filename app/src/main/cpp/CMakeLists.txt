@@ -40,8 +40,7 @@ set(CORE_SOURCES
     # Entry point
     framegen_jni.cpp
 
-    # Vulkan layer & capture
-    vulkan/vulkan_layer.cpp
+    # Vulkan capture & compute (for JNI engine, NOT the layer)
     vulkan/vulkan_capture.cpp
     vulkan/vulkan_compute.cpp
 
@@ -86,12 +85,12 @@ else()
 endif()
 
 # ============================================================
-# Vulkan Layer (implicit layer for game interception)
+# Vulkan Layer — SELF-CONTAINED frame generation
+# This .so is loaded into game processes via gpu_debug_layers.
+# It must be fully standalone (no deps on libframegen.so).
 # ============================================================
 set(LAYER_SOURCES
     vulkan/vulkan_layer.cpp
-    vulkan/vulkan_capture.cpp
-    utils/gpu_buffer.cpp
 )
 
 add_library(VkLayer_framegen SHARED ${LAYER_SOURCES})
@@ -99,7 +98,6 @@ add_library(VkLayer_framegen SHARED ${LAYER_SOURCES})
 target_include_directories(VkLayer_framegen PRIVATE
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/vulkan
-    ${CMAKE_SOURCE_DIR}/utils
 )
 
 target_link_libraries(VkLayer_framegen
@@ -109,6 +107,12 @@ target_link_libraries(VkLayer_framegen
 
 target_compile_definitions(VkLayer_framegen PRIVATE
     LAYER_NAME="VK_LAYER_FRAMEGEN_capture"
+)
+
+# Ensure the layer exports are visible
+set_target_properties(VkLayer_framegen PROPERTIES
+    CXX_VISIBILITY_PRESET default
+    C_VISIBILITY_PRESET default
 )
 
 # ============================================================
