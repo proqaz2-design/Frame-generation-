@@ -1,0 +1,20 @@
+# Gradle
+.gradle/
+build/
+local.properties
+
+# IDE
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# NDK
+app/.cxx/
+app/src/main/jniLibs/
+
+# APK
+*.apk
+*.aab
