@@ -1,0 +1,73 @@
+#version 450
+
+/**
+ * Flow Refinement — smooth and denoise the motion field.
+ *
+ * Uses a weighted median filter to remove outliers
+ * while preserving motion boundaries.
+ */
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(binding = 0) uniform sampler2D rawFlow;       // Raw motion vectors
+layout(binding = 1) uniform sampler2D sourceFrame;    // For edge-aware filtering
+layout(binding = 2, rg16f) writeonly uniform image2D refinedFlow;
+
+layout(push_constant) uniform PushConstants {
+    uint width;
+    uint height;
+    float edgeThreshold;
+    float pad;
+} pc;
+
+// 5x5 weighted median
+#define KERNEL_SIZE 5
+#define KERNEL_HALF 2
+#define MAX_SAMPLES (KERNEL_SIZE * KERNEL_SIZE)
+
+void main() {
+    ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
+    if (pos.x >= int(pc.width) || pos.y >= int(pc.height)) return;
+
+    vec2 uv = (vec2(pos) + 0.5) / vec2(pc.width, pc.height);
+    vec3 centerColor = texture(sourceFrame, uv).rgb;
+    vec2 centerFlow = texture(rawFlow, uv).rg;
+
+    // Collect weighted samples
+    vec2 flowSamples[MAX_SAMPLES];
+    float weights[MAX_SAMPLES];
+    int sampleCount = 0;
+    float totalWeight = 0.0;
+
+    for (int dy = -KERNEL_HALF; dy <= KERNEL_HALF; dy++) {
+        for (int dx = -KERNEL_HALF; dx <= KERNEL_HALF; dx++) {
+            ivec2 samplePos = pos + ivec2(dx, dy);
+            if (samplePos.x < 0 || samplePos.y < 0 ||
+                samplePos.x >= int(pc.width) || samplePos.y >= int(pc.height)) continue;
+
+            vec2 sampleUV = (vec2(samplePos) + 0.5) / vec2(pc.width, pc.height);
+            vec3 sampleColor = texture(sourceFrame, sampleUV).rgb;
+            vec2 sampleFlow = texture(rawFlow, sampleUV).rg;
+
+            // Edge-aware weight: similar colors -> higher weight
+            float colorDist = length(sampleColor - centerColor);
+            float spatialDist = length(vec2(dx, dy));
+
+            float w = exp(-colorDist * colorDist / (2.0 * pc.edgeThreshold * pc.edgeThreshold))
+                    * exp(-spatialDist * spatialDist / 8.0);
+
+            flowSamples[sampleCount] = sampleFlow;
+            weights[sampleCount] = w;
+            totalWeight += w;
+            sampleCount++;
+        }
+    }
+
+    // Weighted average (edge-aware bilateral filter)
+    vec2 filteredFlow = vec2(0.0);
+    for (int i = 0; i < sampleCount; i++) {
+        filteredFlow += flowSamples[i] * (weights[i] / totalWeight);
+    }
+
+    imageStore(refinedFlow, pos, vec4(filteredFlow, 0, 0));
+}

@@ -1,0 +1,109 @@
+#version 450
+#extension GL_EXT_shader_explicit_arithmetic_types : enable
+
+/**
+ * Optical Flow — Block matching with Sum of Absolute Differences (SAD).
+ *
+ * For each block in frame1, find the best matching block in frame2
+ * within a search radius. Output the motion vector (dx, dy).
+ *
+ * Work group: 16x16 (one block per invocation)
+ */
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(binding = 0) uniform sampler2D frame1;
+layout(binding = 1) uniform sampler2D frame2;
+layout(binding = 2, rg16f) writeonly uniform image2D flowOut;
+
+layout(push_constant) uniform PushConstants {
+    float timestep;
+    uint width;
+    uint height;
+    uint blockSize;
+} pc;
+
+#define SEARCH_RADIUS 16
+#define BLOCK_SIZE 8
+
+shared float sharedSAD[SEARCH_RADIUS * 2 + 1][SEARCH_RADIUS * 2 + 1];
+
+float computeSAD(ivec2 pos1, ivec2 offset) {
+    float sad = 0.0;
+    for (int by = 0; by < BLOCK_SIZE; by++) {
+        for (int bx = 0; bx < BLOCK_SIZE; bx++) {
+            vec2 uv1 = (vec2(pos1) + vec2(bx, by) + 0.5) / vec2(pc.width, pc.height);
+            vec2 uv2 = (vec2(pos1) + vec2(bx, by) + vec2(offset) + 0.5) / vec2(pc.width, pc.height);
+
+            vec3 c1 = texture(frame1, uv1).rgb;
+            vec3 c2 = texture(frame2, uv2).rgb;
+
+            sad += abs(c1.r - c2.r) + abs(c1.g - c2.g) + abs(c1.b - c2.b);
+        }
+    }
+    return sad;
+}
+
+void main() {
+    ivec2 blockPos = ivec2(gl_GlobalInvocationID.xy) * BLOCK_SIZE;
+
+    if (blockPos.x >= int(pc.width) || blockPos.y >= int(pc.height)) return;
+
+    // Full search within radius
+    float bestSAD = 1e10;
+    ivec2 bestOffset = ivec2(0);
+
+    for (int dy = -SEARCH_RADIUS; dy <= SEARCH_RADIUS; dy++) {
+        for (int dx = -SEARCH_RADIUS; dx <= SEARCH_RADIUS; dx++) {
+            // Bounds check
+            ivec2 target = blockPos + ivec2(dx, dy);
+            if (target.x < 0 || target.y < 0 ||
+                target.x + BLOCK_SIZE > int(pc.width) ||
+                target.y + BLOCK_SIZE > int(pc.height)) continue;
+
+            float sad = computeSAD(blockPos, ivec2(dx, dy));
+
+            if (sad < bestSAD) {
+                bestSAD = sad;
+                bestOffset = ivec2(dx, dy);
+            }
+        }
+    }
+
+    // Sub-pixel refinement using parabola fitting
+    // Check neighbors of best match
+    float sadLeft   = computeSAD(blockPos, bestOffset + ivec2(-1, 0));
+    float sadRight  = computeSAD(blockPos, bestOffset + ivec2(1, 0));
+    float sadUp     = computeSAD(blockPos, bestOffset + ivec2(0, -1));
+    float sadDown   = computeSAD(blockPos, bestOffset + ivec2(0, 1));
+
+    // Parabola: subpixel = (left - right) / (2 * (left + right - 2*center))
+    float subX = 0.0;
+    float subY = 0.0;
+    float denom_x = sadLeft + sadRight - 2.0 * bestSAD;
+    float denom_y = sadUp + sadDown - 2.0 * bestSAD;
+
+    if (abs(denom_x) > 0.001) {
+        subX = (sadLeft - sadRight) / (2.0 * denom_x);
+        subX = clamp(subX, -0.5, 0.5);
+    }
+    if (abs(denom_y) > 0.001) {
+        subY = (sadUp - sadDown) / (2.0 * denom_y);
+        subY = clamp(subY, -0.5, 0.5);
+    }
+
+    vec2 flow = vec2(float(bestOffset.x) + subX, float(bestOffset.y) + subY);
+
+    // Scale by timestep for intermediate frame position
+    flow *= pc.timestep;
+
+    // Write flow for entire block
+    for (int by = 0; by < BLOCK_SIZE; by++) {
+        for (int bx = 0; bx < BLOCK_SIZE; bx++) {
+            ivec2 pixelPos = blockPos + ivec2(bx, by);
+            if (pixelPos.x < int(pc.width) && pixelPos.y < int(pc.height)) {
+                imageStore(flowOut, pixelPos, vec4(flow, 0.0, 0.0));
+            }
+        }
+    }
+}

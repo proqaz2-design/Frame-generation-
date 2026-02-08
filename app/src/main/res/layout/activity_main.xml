@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#1a1a2e">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Header -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="⚡ FrameGen"
+            android:textColor="#00d4ff"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:paddingBottom="4dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="AI Frame Generation for Android Games"
+            android:textColor="#8899aa"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:paddingBottom="16dp" />
+
+        <!-- Display Info -->
+        <TextView
+            android:id="@+id/txtDisplayInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Display: Loading..."
+            android:textColor="#aabbcc"
+            android:textSize="12sp"
+            android:background="#16213e"
+            android:padding="8dp"
+            android:fontFamily="monospace" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#333"
+            android:layout_marginVertical="8dp" />
+
+        <!-- Game Selection -->
+        <Button
+            android:id="@+id/btnSelectGame"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="🎮 Select Game"
+            android:textColor="#ffffff"
+            android:backgroundTint="#0f3460"
+            android:textAllCaps="false" />
+
+        <ListView
+            android:id="@+id/gameListView"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:visibility="gone"
+            android:background="#16213e"
+            android:divider="#333"
+            android:dividerHeight="1dp"
+            android:layout_marginVertical="4dp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#333"
+            android:layout_marginVertical="8dp" />
+
+        <!-- Mode Selection -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingVertical="4dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Mode:"
+                android:textColor="#cccccc"
+                android:textSize="14sp" />
+
+            <Spinner
+                android:id="@+id/spinnerMode"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="2"
+                android:background="#16213e"
+                android:popupBackground="#16213e" />
+        </LinearLayout>
+
+        <!-- Quality Slider -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingVertical="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Quality:"
+                android:textColor="#cccccc"
+                android:textSize="14sp"
+                android:paddingEnd="8dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="⚡"
+                android:textSize="12sp" />
+
+            <SeekBar
+                android:id="@+id/seekQuality"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:progressTint="#00d4ff"
+                android:thumbTint="#00d4ff" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🎨"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <!-- Thermal Protection -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingVertical="4dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="🌡 Thermal Protection:"
+                android:textColor="#cccccc"
+                android:textSize="14sp" />
+
+            <Switch
+                android:id="@+id/switchThermal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:thumbTint="#00d4ff"
+                android:trackTint="#333" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#333"
+            android:layout_marginVertical="8dp" />
+
+        <!-- Control Buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <Button
+                android:id="@+id/btnStart"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:text="▶ START"
+                android:textColor="#ffffff"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:backgroundTint="#00a86b"
+                android:layout_marginEnd="4dp" />
+
+            <Button
+                android:id="@+id/btnStop"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:text="⏹ STOP"
+                android:textColor="#ffffff"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:backgroundTint="#e63946"
+                android:layout_marginStart="4dp" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#333"
+            android:layout_marginVertical="8dp" />
+
+        <!-- GPU Temperature -->
+        <TextView
+            android:id="@+id/txtGpuTemp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="GPU: --°C"
+            android:textColor="#00ff88"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:paddingVertical="4dp" />
+
+        <!-- Surface for rendering -->
+        <SurfaceView
+            android:id="@+id/surfaceView"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:visibility="invisible" />
+
+        <!-- Performance Stats -->
+        <TextView
+            android:id="@+id/txtStats"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Ready"
+            android:textColor="#88ff88"
+            android:textSize="12sp"
+            android:fontFamily="monospace"
+            android:background="#0a0a1a"
+            android:padding="12dp"
+            android:lineSpacingExtra="2dp" />
+
+    </LinearLayout>
+</ScrollView>

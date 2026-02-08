@@ -1,0 +1,76 @@
+#version 450
+
+/**
+ * Frame Blend — combine two warped frames into the final interpolated frame.
+ *
+ * Blends the forward-warped frame1 and backward-warped frame2
+ * using timestep-weighted alpha and occlusion-aware compositing.
+ */
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(binding = 0) uniform sampler2D warpedFrame1;  // Frame1 warped forward to t
+layout(binding = 1) uniform sampler2D warpedFrame2;  // Frame2 warped backward to t
+layout(binding = 2, rgba8) writeonly uniform image2D blendedOut;
+
+layout(push_constant) uniform PushConstants {
+    float blendFactor;   // timestep t: 0.0 = 100% frame1, 1.0 = 100% frame2
+    uint width;
+    uint height;
+    float pad;
+} pc;
+
+// Occlusion detection via forward-backward consistency
+float computeOcclusionWeight(vec4 c1, vec4 c2) {
+    // If the two warped frames differ significantly at a pixel,
+    // one of them is likely occluded — prefer the more reliable one
+    float diff = length(c1.rgb - c2.rgb);
+    float threshold = 0.1;  // Tolerance
+
+    if (diff > threshold) {
+        // Significant difference — likely occlusion
+        // Weight toward the closer frame temporally
+        return smoothstep(threshold, threshold * 3.0, diff);
+    }
+    return 0.0;  // Both agree — blend normally
+}
+
+void main() {
+    ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
+    if (pos.x >= int(pc.width) || pos.y >= int(pc.height)) return;
+
+    vec2 uv = (vec2(pos) + 0.5) / vec2(pc.width, pc.height);
+
+    vec4 c1 = texture(warpedFrame1, uv);
+    vec4 c2 = texture(warpedFrame2, uv);
+
+    float t = pc.blendFactor;
+
+    // Check for occlusion
+    float occlusion = computeOcclusionWeight(c1, c2);
+
+    vec4 result;
+    if (occlusion > 0.5) {
+        // Occlusion detected — use the temporally closer frame
+        result = (t < 0.5) ? c1 : c2;
+    } else {
+        // Normal linear blend weighted by timestep
+        result = mix(c1, c2, t);
+    }
+
+    // Slight sharpening to counteract blur from bilinear interpolation
+    // Unsharp mask: sharpen = original + (original - blurred) * amount
+    vec4 blurred = (
+        texture(warpedFrame1, uv + vec2(1.0 / pc.width, 0)) +
+        texture(warpedFrame1, uv - vec2(1.0 / pc.width, 0)) +
+        texture(warpedFrame1, uv + vec2(0, 1.0 / pc.height)) +
+        texture(warpedFrame1, uv - vec2(0, 1.0 / pc.height))
+    ) * 0.25;
+
+    float sharpenAmount = 0.15;
+    result.rgb += (result.rgb - blurred.rgb) * sharpenAmount;
+    result.rgb = clamp(result.rgb, vec3(0.0), vec3(1.0));
+    result.a = 1.0;
+
+    imageStore(blendedOut, pos, result);
+}

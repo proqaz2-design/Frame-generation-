@@ -1,0 +1,48 @@
+#version 450
+
+/**
+ * Flow Consistency — forward-backward consistency check.
+ *
+ * Checks if forward flow and backward flow agree.
+ * If they don't, the pixel is likely occluded.
+ * Output: confidence map (0.0 = occluded, 1.0 = visible).
+ */
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(binding = 0) uniform sampler2D forwardFlow;    // Frame1 -> Frame2
+layout(binding = 1) uniform sampler2D backwardFlow;   // Frame2 -> Frame1
+layout(binding = 2, r16f) writeonly uniform image2D confidenceOut;
+
+layout(push_constant) uniform PushConstants {
+    uint width;
+    uint height;
+    float threshold;    // Consistency threshold in pixels
+    float pad;
+} pc;
+
+void main() {
+    ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
+    if (pos.x >= int(pc.width) || pos.y >= int(pc.height)) return;
+
+    vec2 uv = (vec2(pos) + 0.5) / vec2(pc.width, pc.height);
+
+    // Forward flow: where does this pixel go in frame2?
+    vec2 fwd = texture(forwardFlow, uv).rg;
+
+    // Position in frame2
+    vec2 pos2UV = uv + fwd / vec2(pc.width, pc.height);
+    pos2UV = clamp(pos2UV, vec2(0.0), vec2(1.0));
+
+    // Backward flow at that position: where does it come from in frame1?
+    vec2 bwd = texture(backwardFlow, pos2UV).rg;
+
+    // Consistency: F(x) + B(x + F(x)) should be close to zero
+    vec2 consistency = fwd + bwd;
+    float error = length(consistency);
+
+    // Convert error to confidence (0 = occluded, 1 = visible)
+    float confidence = 1.0 - smoothstep(pc.threshold * 0.5, pc.threshold * 2.0, error);
+
+    imageStore(confidenceOut, pos, vec4(confidence, 0, 0, 0));
+}

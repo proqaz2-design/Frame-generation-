@@ -1,0 +1,35 @@
+#version 450
+
+/**
+ * Downsample — create image pyramid level using box filter (2x2 average).
+ */
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(binding = 0) uniform sampler2D inputImage;
+layout(binding = 1, rgba8) writeonly uniform image2D outputImage;
+
+layout(push_constant) uniform PushConstants {
+    uint srcWidth;
+    uint srcHeight;
+    uint dstWidth;
+    uint dstHeight;
+} pc;
+
+void main() {
+    ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
+    if (pos.x >= int(pc.dstWidth) || pos.y >= int(pc.dstHeight)) return;
+
+    // 2x2 box filter
+    vec2 srcPos = vec2(pos) * 2.0 + 0.5;
+    vec2 invSrcSize = vec2(1.0 / float(pc.srcWidth), 1.0 / float(pc.srcHeight));
+
+    vec4 c00 = texture(inputImage, (srcPos + vec2(0.0, 0.0)) * invSrcSize);
+    vec4 c10 = texture(inputImage, (srcPos + vec2(1.0, 0.0)) * invSrcSize);
+    vec4 c01 = texture(inputImage, (srcPos + vec2(0.0, 1.0)) * invSrcSize);
+    vec4 c11 = texture(inputImage, (srcPos + vec2(1.0, 1.0)) * invSrcSize);
+
+    vec4 result = (c00 + c10 + c01 + c11) * 0.25;
+
+    imageStore(outputImage, pos, result);
+}

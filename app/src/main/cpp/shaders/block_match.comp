@@ -1,0 +1,124 @@
+#version 450
+
+/**
+ * Block Matching — hierarchical motion estimation.
+ *
+ * At each pyramid level, refines motion vectors from coarser level
+ * using diamond search pattern for speed.
+ */
+
+layout(local_size_x = 8, local_size_y = 8) in;
+
+layout(binding = 0) uniform sampler2D frame1Level;     // Current pyramid level of frame 1
+layout(binding = 1) uniform sampler2D frame2Level;     // Current pyramid level of frame 2
+layout(binding = 2) uniform sampler2D prevLevelFlow;   // Flow from coarser level (upscaled)
+layout(binding = 3, rg16f) writeonly uniform image2D flowOut;
+
+layout(push_constant) uniform PushConstants {
+    uint width;
+    uint height;
+    uint blockSize;
+    uint searchRadius;
+    uint level;
+    uint totalLevels;
+    float pad[2];
+} pc;
+
+#define DIAMOND_POINTS 9
+
+const ivec2 diamondPattern[DIAMOND_POINTS] = {
+    ivec2( 0,  0),
+    ivec2( 1,  0),
+    ivec2(-1,  0),
+    ivec2( 0,  1),
+    ivec2( 0, -1),
+    ivec2( 1,  1),
+    ivec2(-1,  1),
+    ivec2( 1, -1),
+    ivec2(-1, -1),
+};
+
+float blockSAD(ivec2 blockPos, ivec2 offset) {
+    float sad = 0.0;
+    int bs = int(pc.blockSize);
+
+    for (int y = 0; y < bs; y++) {
+        for (int x = 0; x < bs; x++) {
+            vec2 uv1 = (vec2(blockPos + ivec2(x, y)) + 0.5) / vec2(pc.width, pc.height);
+            vec2 uv2 = (vec2(blockPos + ivec2(x, y) + offset) + 0.5) / vec2(pc.width, pc.height);
+
+            // Luma comparison (faster than full RGB)
+            float l1 = dot(texture(frame1Level, uv1).rgb, vec3(0.299, 0.587, 0.114));
+            float l2 = dot(texture(frame2Level, uv2).rgb, vec3(0.299, 0.587, 0.114));
+
+            sad += abs(l1 - l2);
+        }
+    }
+    return sad;
+}
+
+void main() {
+    ivec2 blockIdx = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 blockPos = blockIdx * int(pc.blockSize);
+
+    if (blockPos.x >= int(pc.width) || blockPos.y >= int(pc.height)) return;
+
+    // Initialize with flow from previous (coarser) level
+    vec2 initFlow = vec2(0.0);
+    if (pc.level < pc.totalLevels - 1) {
+        vec2 uv = (vec2(blockPos) + float(pc.blockSize) * 0.5) / vec2(pc.width, pc.height);
+        initFlow = texture(prevLevelFlow, uv).rg * 2.0; // Scale up from coarser level
+    }
+
+    ivec2 bestOffset = ivec2(initFlow);
+    float bestSAD = blockSAD(blockPos, bestOffset);
+
+    // Diamond search refinement (3 iterations)
+    for (int iter = 0; iter < 3; iter++) {
+        int stepSize = max(1, int(pc.searchRadius) >> (iter + 1));
+        bool improved = false;
+
+        for (int p = 1; p < DIAMOND_POINTS; p++) {
+            ivec2 candidate = bestOffset + diamondPattern[p] * stepSize;
+
+            // Bounds check
+            ivec2 targetPos = blockPos + candidate;
+            if (targetPos.x < 0 || targetPos.y < 0 ||
+                targetPos.x + int(pc.blockSize) > int(pc.width) ||
+                targetPos.y + int(pc.blockSize) > int(pc.height)) continue;
+
+            float sad = blockSAD(blockPos, candidate);
+            if (sad < bestSAD) {
+                bestSAD = sad;
+                bestOffset = candidate;
+                improved = true;
+            }
+        }
+
+        if (!improved) break;
+    }
+
+    // Sub-pixel refinement
+    float sadL = blockSAD(blockPos, bestOffset + ivec2(-1, 0));
+    float sadR = blockSAD(blockPos, bestOffset + ivec2(1, 0));
+    float sadU = blockSAD(blockPos, bestOffset + ivec2(0, -1));
+    float sadD = blockSAD(blockPos, bestOffset + ivec2(0, 1));
+
+    float subX = 0.0, subY = 0.0;
+    float dx = sadL + sadR - 2.0 * bestSAD;
+    float dy = sadU + sadD - 2.0 * bestSAD;
+    if (abs(dx) > 0.001) subX = clamp((sadL - sadR) / (2.0 * dx), -0.5, 0.5);
+    if (abs(dy) > 0.001) subY = clamp((sadU - sadD) / (2.0 * dy), -0.5, 0.5);
+
+    vec2 finalFlow = vec2(bestOffset) + vec2(subX, subY);
+
+    // Write to all pixels in the block
+    for (int y = 0; y < int(pc.blockSize); y++) {
+        for (int x = 0; x < int(pc.blockSize); x++) {
+            ivec2 pixelPos = blockPos + ivec2(x, y);
+            if (pixelPos.x < int(pc.width) && pixelPos.y < int(pc.height)) {
+                imageStore(flowOut, pixelPos, vec4(finalFlow, 0, 0));
+            }
+        }
+    }
+}
