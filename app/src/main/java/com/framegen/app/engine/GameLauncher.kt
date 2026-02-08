@@ -203,6 +203,11 @@ class GameLauncher(private val context: Context) {
             "com.winlator", "com.pairip.winlator",
             "br.pucrio.winlator", "com.niceplayer.winlator",
             "com.eltechs", "com.mobox",
+            // GameHub variants
+            "com.gamehub", "com.gamehub.app",
+            "com.gamehub.lite", "com.gamehub.brazil",
+            "br.com.gamehub", "com.gamehublite",
+            "com.nextstep.gamehub",
             // Retro/console emulators
             "com.ppsspp", "org.ppsspp",
             "org.dolphinemu", "org.citra",

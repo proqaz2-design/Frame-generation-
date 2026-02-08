@@ -40,6 +40,14 @@ class GameDetectorService : AccessibilityService() {
             // ExaGear, Mobox, etc.
             "com.eltechs.ed", "com.eltechs.es",
             "com.mobox",
+            // === GameHub variants ===
+            "com.gamehub",
+            "com.gamehub.app",
+            "com.gamehub.lite",
+            "com.gamehub.brazil",
+            "br.com.gamehub",
+            "com.gamehublite",
+            "com.nextstep.gamehub",
             // === Game publishers ===
             "com.supercell",
             "com.miHoYo", "com.HoYoverse",
