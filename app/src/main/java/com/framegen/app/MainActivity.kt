@@ -505,7 +505,7 @@ class MainActivity : AppCompatActivity() {
             // Step 2: Start the background service
             FrameGenService.start(this@MainActivity)
 
-            isActive = true
+            this@MainActivity.isActive = true
             updateUI()
             startStatsMonitor()
 
@@ -523,7 +523,7 @@ class MainActivity : AppCompatActivity() {
 
             FrameGenService.stop(this@MainActivity)
             statsJob?.cancel()
-            isActive = false
+            this@MainActivity.isActive = false
             updateUI()
         }
     }
