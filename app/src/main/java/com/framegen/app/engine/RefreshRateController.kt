@@ -99,22 +99,7 @@ class RefreshRateController(private val context: Context) {
         params.preferredDisplayModeId = findBestMode(targetRate)
 
         // Force high refresh rate
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            // Android 12+ — request exact frame rate
-            activity.window.attributes = params
-
-            // Also use Surface.setFrameRate for fine control
-            val surfaceView = activity.window.decorView
-            surfaceView.holder?.surface?.let { surface ->
-                surface.setFrameRate(
-                    targetRate,
-                    android.view.Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE,
-                    android.view.Surface.CHANGE_FRAME_RATE_ALWAYS
-                )
-            }
-        } else {
-            activity.window.attributes = params
-        }
+        activity.window.attributes = params
 
         // Disable AOSP frame rate limiter
         try {

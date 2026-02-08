@@ -59,6 +59,7 @@ public:
                                 VkBuffer buffer, VkDeviceSize size);
 
     VkDevice getDevice() const { return device_; }
+    VkPhysicalDevice getPhysicalDevice() const { return physicalDevice_; }
     VkQueue getComputeQueue() const { return computeQueue_; }
 
 private:

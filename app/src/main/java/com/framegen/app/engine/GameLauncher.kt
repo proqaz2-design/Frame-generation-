@@ -151,7 +151,7 @@ class GameLauncher(private val context: Context) {
             )
 
             for (cmd in commands) {
-                val process = rikka.shizuku.ShizukuRemoteProcess(
+                val process = rikka.shizuku.Shizuku.newProcess(
                     arrayOf("sh", "-c", cmd), null, null
                 )
                 process.waitFor()

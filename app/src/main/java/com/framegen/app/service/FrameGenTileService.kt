@@ -64,14 +64,12 @@ class FrameGenTileService : TileService() {
             tile.state = Tile.STATE_ACTIVE
             tile.label = "FrameGen"
 
-            if (FrameGenService.isActivelyGenerating) {
-                tile.subtitle = "Active: ${FrameGenService.currentGamePackage?.split(".")?.lastOrNull() ?: "game"}"
-            } else {
-                tile.subtitle = "Monitoring"
-            }
-
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                tile.subtitle = tile.subtitle
+                tile.subtitle = if (FrameGenService.isActivelyGenerating) {
+                    "Active: ${FrameGenService.currentGamePackage?.split(".")?.lastOrNull() ?: "game"}"
+                } else {
+                    "Monitoring"
+                }
             }
         } else {
             tile.state = Tile.STATE_INACTIVE

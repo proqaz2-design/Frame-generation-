@@ -108,7 +108,6 @@ target_link_libraries(VkLayer_framegen
 )
 
 target_compile_definitions(VkLayer_framegen PRIVATE
-    VK_LAYER_EXPORT=1
     LAYER_NAME="VK_LAYER_FRAMEGEN_capture"
 )
 

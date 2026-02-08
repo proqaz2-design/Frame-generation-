@@ -204,8 +204,8 @@ Java_com_framegen_app_engine_FrameGenEngine_nativeInit(
         return JNI_FALSE;
     }
 
-    uint32_t width = ANativeWindow_getWidth(g_engine.window);
-    uint32_t height = ANativeWindow_getHeight(g_engine.window);
+    uint32_t width = static_cast<uint32_t>(ANativeWindow_getWidth(g_engine.window));
+    uint32_t height = static_cast<uint32_t>(ANativeWindow_getHeight(g_engine.window));
     LOGI("Window: %ux%u", width, height);
 
     // Configure

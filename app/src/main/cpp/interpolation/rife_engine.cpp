@@ -4,6 +4,7 @@
 
 #include "rife_engine.h"
 #include "motion_estimator.h"
+#include <algorithm>
 
 namespace framegen {
 

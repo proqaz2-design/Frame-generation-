@@ -1,6 +1,7 @@
 package com.framegen.app
 
 import android.content.*
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.SurfaceHolder
@@ -63,8 +64,12 @@ class MainActivity : AppCompatActivity() {
         showDisplayInfo()
 
         // Register for service state updates
-        registerReceiver(stateReceiver, IntentFilter("com.framegen.app.STATE_CHANGED"),
-            RECEIVER_NOT_EXPORTED)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(stateReceiver, IntentFilter("com.framegen.app.STATE_CHANGED"),
+                RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(stateReceiver, IntentFilter("com.framegen.app.STATE_CHANGED"))
+        }
 
         // Auto-start service if it was enabled
         val prefs = getSharedPreferences(FrameGenService.PREF_NAME, MODE_PRIVATE)

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- FrameGen "F" logo with frame generation motif -->
+    <!-- Outer frame -->
+    <path
+        android:fillColor="#BB86FC"
+        android:pathData="M30,30 L78,30 L78,78 L30,78 Z M34,34 L34,74 L74,74 L74,34 Z"/>
+
+    <!-- Inner double-frame effect -->
+    <path
+        android:fillColor="#6200EE"
+        android:pathData="M38,38 L70,38 L70,70 L38,70 Z M42,42 L42,66 L66,66 L66,42 Z"/>
+
+    <!-- "F" letter -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M46,48 L62,48 L62,52 L50,52 L50,56 L58,56 L58,60 L50,60 L50,68 L46,68 Z"/>
+
+    <!-- Arrow/motion indicator -->
+    <path
+        android:fillColor="#03DAC5"
+        android:pathData="M64,54 L72,60 L64,66 Z"/>
+</vector>

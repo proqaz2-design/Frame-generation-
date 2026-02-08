@@ -4,6 +4,7 @@
 
 #include "frame_presenter.h"
 #include <chrono>
+#include <cinttypes>
 
 namespace framegen {
 
@@ -68,14 +69,14 @@ void FramePresenter::stop() {
         presentationThread_.join();
     }
 
-    LOGI("FramePresenter: Pipeline stopped. Generated: %lu, Dropped: %lu",
+    LOGI("FramePresenter: Pipeline stopped. Generated: %" PRIu64 ", Dropped: %" PRIu64,
          stats_.frames_generated.load(), stats_.frames_dropped.load());
 }
 
 void FramePresenter::onFrameCaptured(const FrameData& frame) {
     if (!capturedQueue_.push(frame)) {
         stats_.frames_dropped.fetch_add(1);
-        LOGW("FramePresenter: Capture queue full, dropping frame %lu", frame.frame_index);
+        LOGW("FramePresenter: Capture queue full, dropping frame %" PRIu64, frame.frame_index);
     }
 }
 

@@ -10,8 +10,17 @@
 
 #include <vulkan/vulkan.h>
 #include <mutex>
+#include <atomic>
 #include <unordered_map>
 #include <functional>
+
+#ifndef VK_LAYER_EXPORT
+#if defined(__GNUC__) && __GNUC__ >= 4
+#define VK_LAYER_EXPORT __attribute__((visibility("default")))
+#else
+#define VK_LAYER_EXPORT
+#endif
+#endif
 
 namespace framegen {
 

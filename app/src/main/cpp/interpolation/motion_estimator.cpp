@@ -181,8 +181,15 @@ bool MotionEstimator::createFlowField() {
     allocInfo.allocationSize = memReq.size;
     // Find device local memory type
     VkPhysicalDeviceMemoryProperties memProps;
-    vkGetPhysicalDeviceMemoryProperties(
-        /* need physical device — passed through compute */ VK_NULL_HANDLE, &memProps);
+    vkGetPhysicalDeviceMemoryProperties(compute_->getPhysicalDevice(), &memProps);
+    allocInfo.memoryTypeIndex = 0;
+    for (uint32_t i = 0; i < memProps.memoryTypeCount; i++) {
+        if ((memReq.memoryTypeBits & (1 << i)) &&
+            (memProps.memoryTypes[i].propertyFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)) {
+            allocInfo.memoryTypeIndex = i;
+            break;
+        }
+    }
 
     if (vkAllocateMemory(dev, &allocInfo, nullptr, &flowMemory_) != VK_SUCCESS) {
         return false;
