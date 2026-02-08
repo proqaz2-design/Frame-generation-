@@ -1,13 +1,20 @@
 <resources>
-    <style name="Theme.FrameGen" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+    <style name="Theme.FrameGen" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="colorPrimary">#00d4ff</item>
         <item name="colorPrimaryVariant">#0077b6</item>
         <item name="colorOnPrimary">#ffffff</item>
-        <item name="colorSecondary">#00ff88</item>
-        <item name="colorSecondaryVariant">#00a86b</item>
-        <item name="colorOnSecondary">#000000</item>
-        <item name="android:statusBarColor">#1a1a2e</item>
-        <item name="android:navigationBarColor">#1a1a2e</item>
+        <item name="colorSecondary">#7c3aed</item>
+        <item name="colorSecondaryVariant">#5b21b6</item>
+        <item name="colorOnSecondary">#ffffff</item>
+        <item name="android:colorBackground">#0d0d1a</item>
+        <item name="colorSurface">#14142b</item>
+        <item name="colorOnSurface">#e0e0f0</item>
+        <item name="android:statusBarColor">#0d0d1a</item>
+        <item name="android:navigationBarColor">#0d0d1a</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:textColor">#e0e0f0</item>
+        <item name="android:textColorHint">#444466</item>
     </style>
 
     <style name="Theme.FrameGen.Fullscreen" parent="Theme.FrameGen">
@@ -15,5 +22,6 @@
         <item name="windowActionBar">false</item>
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowTranslucentNavigation">true</item>
     </style>
 </resources>

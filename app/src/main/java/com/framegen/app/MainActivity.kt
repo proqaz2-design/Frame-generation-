@@ -281,27 +281,28 @@ class MainActivity : AppCompatActivity() {
 
                 withContext(Dispatchers.Main) {
                     txtStats.text = buildString {
-                        appendLine("═══ Performance ═══")
-                        appendLine("FPS: %.1f".format(stats.effectiveFps))
-                        appendLine("Capture:  %.2f ms".format(stats.captureMs))
-                        appendLine("Motion:   %.2f ms".format(stats.motionMs))
-                        appendLine("AI Interp: %.2f ms".format(stats.interpolationMs))
-                        appendLine("Present:  %.2f ms".format(stats.presentMs))
-                        appendLine("Total:    %.2f ms".format(stats.totalMs))
-                        appendLine("Generated: ${stats.framesGenerated}")
-                        appendLine("Dropped:   ${stats.framesDropped}")
+                        appendLine("FPS          %.1f".format(stats.effectiveFps))
+                        appendLine("Capture      %.2f ms".format(stats.captureMs))
+                        appendLine("Motion       %.2f ms".format(stats.motionMs))
+                        appendLine("Interpolate  %.2f ms".format(stats.interpolationMs))
+                        appendLine("Present      %.2f ms".format(stats.presentMs))
+                        appendLine("Total        %.2f ms".format(stats.totalMs))
+                        appendLine("Generated    ${stats.framesGenerated}")
+                        append("Dropped      ${stats.framesDropped}")
                     }
-
-                    txtGpuTemp.text = "GPU: %.1f°C %s".format(
-                        temp,
-                        if (throttled) "⚠ THROTTLED" else "✓"
+                    txtStats.setTextColor(
+                        if (stats.effectiveFps > 50) android.graphics.Color.parseColor("#00ff88")
+                        else if (stats.effectiveFps > 30) android.graphics.Color.parseColor("#ffaa00")
+                        else android.graphics.Color.parseColor("#e63946")
                     )
 
-                    if (throttled) {
-                        txtGpuTemp.setTextColor(getColor(android.R.color.holo_red_light))
-                    } else {
-                        txtGpuTemp.setTextColor(getColor(android.R.color.holo_green_light))
+                    txtGpuTemp.text = "%.0f°C".format(temp)
+                    val tempColor = when {
+                        throttled -> android.graphics.Color.parseColor("#e63946")
+                        temp >= 70 -> android.graphics.Color.parseColor("#ffaa00")
+                        else -> android.graphics.Color.parseColor("#00ff88")
                     }
+                    txtGpuTemp.setTextColor(tempColor)
                 }
 
                 delay(500) // Update every 500ms
@@ -335,8 +336,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showDisplayInfo() {
         val info = refreshController.getDisplayInfo()
-        txtDisplayInfo.text = "Display: ${info.currentRate}Hz | Max: ${info.maxRate}Hz\n" +
-                              "Supported: ${info.supportedRates.joinToString(", ") { "%.0f".format(it) }}Hz"
+        txtDisplayInfo.text = "${info.currentRate.toInt()} Hz"
     }
 
     override fun onDestroy() {
@@ -364,37 +364,52 @@ class MainActivity : AppCompatActivity() {
 
         switchSystemService.isChecked = serviceOn
 
+        // Update status dot in header
+        val txtStatusDot = findViewById<TextView>(R.id.txtStatusDot)
+        if (generating) {
+            txtStatusDot.text = "ON"
+            txtStatusDot.setTextColor(android.graphics.Color.parseColor("#00ff88"))
+        } else if (serviceOn) {
+            txtStatusDot.text = "IDLE"
+            txtStatusDot.setTextColor(android.graphics.Color.parseColor("#00d4ff"))
+        } else {
+            txtStatusDot.text = "OFF"
+            txtStatusDot.setTextColor(android.graphics.Color.parseColor("#555577"))
+        }
+
         val status = buildString {
-            appendLine("═══ System Status ═══")
-
+            append(if (serviceOn) "● " else "○ ")
             append("Service: ")
-            appendLine(if (serviceOn) "✓ RUNNING" else "✗ Stopped")
+            appendLine(if (serviceOn) "Running" else "Stopped")
 
-            append("Game Detector: ")
-            appendLine(if (accessibilityOn) "✓ Active" else "✗ Not enabled")
+            append(if (accessibilityOn) "● " else "○ ")
+            append("Detector: ")
+            appendLine(if (accessibilityOn) "Active" else "Disabled")
 
-            append("Frame Gen: ")
+            append(if (generating) "● " else "○ ")
+            append("FrameGen: ")
             if (generating) {
-                appendLine("✓ ACTIVE")
-                append("Game: ")
-                appendLine(game ?: "unknown")
+                appendLine("Active")
+                append("  └ ")
+                append(game?.split(".")?.lastOrNull() ?: game ?: "unknown")
             } else {
-                appendLine(if (serviceOn) "○ Waiting for game..." else "✗ Off")
+                append(if (serviceOn) "Waiting for game..." else "Off")
             }
-
-            append("Auto-start: ")
-            appendLine(if (switchAutoStart.isChecked) "✓ On boot" else "✗ Manual")
         }
 
         txtServiceStatus.text = status
+        txtServiceStatus.setTextColor(
+            if (generating) android.graphics.Color.parseColor("#00ff88")
+            else android.graphics.Color.parseColor("#5a5a8a")
+        )
 
-        // Highlight accessibility button if not enabled
+        // Accessibility button
         if (!accessibilityOn) {
-            btnAccessibility.setBackgroundColor(getColor(android.R.color.holo_orange_dark))
-            btnAccessibility.text = "⚠ Enable Game Detector"
+            btnAccessibility.background = getDrawable(R.drawable.btn_warning)
+            btnAccessibility.text = "Enable Game Detector"
         } else {
-            btnAccessibility.setBackgroundColor(getColor(android.R.color.holo_green_dark))
-            btnAccessibility.text = "✓ Game Detector Active"
+            btnAccessibility.background = getDrawable(R.drawable.btn_start)
+            btnAccessibility.text = "Game Detector Active"
         }
     }
 }

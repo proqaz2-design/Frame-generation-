@@ -3,418 +3,654 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#1a1a2e">
+    android:background="@drawable/bg_gradient"
+    android:scrollbars="none"
+    android:overScrollMode="never"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:paddingHorizontal="20dp"
+        android:paddingTop="32dp"
+        android:paddingBottom="40dp">
 
-        <!-- Header -->
-        <TextView
+        <!-- ══════════════════════════════════════ -->
+        <!-- HEADER                                 -->
+        <!-- ══════════════════════════════════════ -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="⚡ FrameGen"
-            android:textColor="#00d4ff"
-            android:textSize="28sp"
-            android:textStyle="bold"
+            android:orientation="vertical"
             android:gravity="center"
-            android:paddingBottom="4dp" />
+            android:paddingBottom="24dp">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="AI Frame Generation for Android Games"
-            android:textColor="#8899aa"
-            android:textSize="14sp"
-            android:gravity="center"
-            android:paddingBottom="16dp" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="FrameGen"
+                android:textColor="#ffffff"
+                android:textSize="32sp"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.05" />
 
-        <!-- Display Info -->
-        <TextView
-            android:id="@+id/txtDisplayInfo"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Display: Loading..."
-            android:textColor="#aabbcc"
-            android:textSize="12sp"
-            android:background="#16213e"
-            android:padding="8dp"
-            android:fontFamily="monospace" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="AI Frame Generation"
+                android:textColor="#5a5a8a"
+                android:textSize="13sp"
+                android:fontFamily="sans-serif"
+                android:letterSpacing="0.12"
+                android:paddingTop="2dp" />
 
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="#333"
-            android:layout_marginVertical="8dp" />
+            <!-- Accent line under title -->
+            <View
+                android:layout_width="60dp"
+                android:layout_height="3dp"
+                android:background="@drawable/divider_gradient"
+                android:layout_marginTop="12dp" />
+        </LinearLayout>
 
-        <!-- Game Selection -->
-        <Button
-            android:id="@+id/btnSelectGame"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="🎮 Select Game"
-            android:textColor="#ffffff"
-            android:backgroundTint="#0f3460"
-            android:textAllCaps="false" />
-
-        <ListView
-            android:id="@+id/gameListView"
-            android:layout_width="match_parent"
-            android:layout_height="200dp"
-            android:visibility="gone"
-            android:background="#16213e"
-            android:divider="#333"
-            android:dividerHeight="1dp"
-            android:layout_marginVertical="4dp" />
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="#333"
-            android:layout_marginVertical="8dp" />
-
-        <!-- Mode Selection -->
+        <!-- ══════════════════════════════════════ -->
+        <!-- STATUS CARD                            -->
+        <!-- ══════════════════════════════════════ -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
+            android:background="@drawable/card_bg_accent"
+            android:padding="16dp"
             android:gravity="center_vertical"
-            android:paddingVertical="4dp">
+            android:layout_marginBottom="16dp">
 
-            <TextView
+            <!-- GPU Temp -->
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Mode:"
-                android:textColor="#cccccc"
-                android:textSize="14sp" />
+                android:orientation="vertical"
+                android:gravity="center">
 
-            <Spinner
-                android:id="@+id/spinnerMode"
-                android:layout_width="0dp"
+                <TextView
+                    android:id="@+id/txtGpuTemp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="--°C"
+                    android:textColor="#00ff88"
+                    android:textSize="22sp"
+                    android:fontFamily="sans-serif-medium" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="GPU TEMP"
+                    android:textColor="#5a5a8a"
+                    android:textSize="10sp"
+                    android:letterSpacing="0.15"
+                    android:paddingTop="2dp" />
+            </LinearLayout>
+
+            <!-- Divider -->
+            <View
+                android:layout_width="1dp"
                 android:layout_height="40dp"
-                android:layout_weight="2"
-                android:background="#16213e"
-                android:popupBackground="#16213e" />
-        </LinearLayout>
+                android:background="#1e1e3f" />
 
-        <!-- Quality Slider -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingVertical="8dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Quality:"
-                android:textColor="#cccccc"
-                android:textSize="14sp"
-                android:paddingEnd="8dp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="⚡"
-                android:textSize="12sp" />
-
-            <SeekBar
-                android:id="@+id/seekQuality"
+            <!-- Display Info -->
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:progressTint="#00d4ff"
-                android:thumbTint="#00d4ff" />
+                android:orientation="vertical"
+                android:gravity="center">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🎨"
-                android:textSize="12sp" />
-        </LinearLayout>
+                <TextView
+                    android:id="@+id/txtDisplayInfo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="-- Hz"
+                    android:textColor="#00d4ff"
+                    android:textSize="22sp"
+                    android:fontFamily="sans-serif-medium" />
 
-        <!-- Thermal Protection -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingVertical="4dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="DISPLAY"
+                    android:textColor="#5a5a8a"
+                    android:textSize="10sp"
+                    android:letterSpacing="0.15"
+                    android:paddingTop="2dp" />
+            </LinearLayout>
 
-            <TextView
+            <!-- Divider -->
+            <View
+                android:layout_width="1dp"
+                android:layout_height="40dp"
+                android:background="#1e1e3f" />
+
+            <!-- Service Status Dot -->
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="🌡 Thermal Protection:"
-                android:textColor="#cccccc"
-                android:textSize="14sp" />
+                android:orientation="vertical"
+                android:gravity="center">
 
-            <Switch
-                android:id="@+id/switchThermal"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="true"
-                android:thumbTint="#00d4ff"
-                android:trackTint="#333" />
+                <TextView
+                    android:id="@+id/txtStatusDot"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="OFF"
+                    android:textColor="#555577"
+                    android:textSize="22sp"
+                    android:fontFamily="sans-serif-medium" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="STATUS"
+                    android:textColor="#5a5a8a"
+                    android:textSize="10sp"
+                    android:letterSpacing="0.15"
+                    android:paddingTop="2dp" />
+            </LinearLayout>
         </LinearLayout>
 
-        <View
+        <!-- ══════════════════════════════════════ -->
+        <!-- GAME SELECTION CARD                    -->
+        <!-- ══════════════════════════════════════ -->
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="#333"
-            android:layout_marginVertical="8dp" />
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/card_bg"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp">
 
-        <!-- Control Buttons -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="GAME"
+                android:textColor="#5a5a8a"
+                android:textSize="11sp"
+                android:letterSpacing="0.2"
+                android:fontFamily="sans-serif-medium"
+                android:paddingBottom="10dp" />
+
+            <Button
+                android:id="@+id/btnSelectGame"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:text="Select Game"
+                android:textColor="#ffffff"
+                android:textSize="15sp"
+                android:textAllCaps="false"
+                android:fontFamily="sans-serif-medium"
+                android:background="@drawable/btn_secondary"
+                android:drawableStart="@android:drawable/ic_menu_search"
+                android:drawablePadding="12dp"
+                android:drawableTint="#5a5a8a"
+                android:paddingHorizontal="16dp"
+                android:gravity="center_vertical"
+                android:stateListAnimator="@null"
+                android:elevation="0dp" />
+
+            <ListView
+                android:id="@+id/gameListView"
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:visibility="gone"
+                android:background="@drawable/stats_bg"
+                android:divider="#1a1a3a"
+                android:dividerHeight="1dp"
+                android:layout_marginTop="8dp"
+                android:padding="4dp" />
+        </LinearLayout>
+
+        <!-- ══════════════════════════════════════ -->
+        <!-- MODE & QUALITY CARD                    -->
+        <!-- ══════════════════════════════════════ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/card_bg"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SETTINGS"
+                android:textColor="#5a5a8a"
+                android:textSize="11sp"
+                android:letterSpacing="0.2"
+                android:fontFamily="sans-serif-medium"
+                android:paddingBottom="12dp" />
+
+            <!-- Mode -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingBottom="14dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="0.35"
+                    android:text="Mode"
+                    android:textColor="#aaaacc"
+                    android:textSize="14sp"
+                    android:fontFamily="sans-serif" />
+
+                <Spinner
+                    android:id="@+id/spinnerMode"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="0.65"
+                    android:background="@drawable/spinner_bg"
+                    android:popupBackground="#14142b"
+                    android:paddingHorizontal="12dp" />
+            </LinearLayout>
+
+            <!-- Quality -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingBottom="14dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingBottom="8dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Quality"
+                        android:textColor="#aaaacc"
+                        android:textSize="14sp"
+                        android:fontFamily="sans-serif" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Performance"
+                        android:textColor="#00d4ff"
+                        android:textSize="11sp"
+                        android:paddingEnd="16dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Quality"
+                        android:textColor="#7c3aed"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <SeekBar
+                    android:id="@+id/seekQuality"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:progressTint="#00d4ff"
+                    android:thumbTint="#ffffff"
+                    android:progressBackgroundTint="#2a2a4a"
+                    android:paddingHorizontal="0dp" />
+            </LinearLayout>
+
+            <!-- Thermal Protection -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Thermal Protection"
+                        android:textColor="#aaaacc"
+                        android:textSize="14sp"
+                        android:fontFamily="sans-serif" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Auto-reduce quality when GPU overheats"
+                        android:textColor="#444466"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <Switch
+                    android:id="@+id/switchThermal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:thumb="@drawable/switch_thumb"
+                    android:track="@drawable/switch_track" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- ══════════════════════════════════════ -->
+        <!-- CONTROL BUTTONS                        -->
+        <!-- ══════════════════════════════════════ -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center">
+            android:layout_marginBottom="12dp">
 
             <Button
                 android:id="@+id/btnStart"
                 android:layout_width="0dp"
                 android:layout_height="56dp"
                 android:layout_weight="1"
-                android:text="▶ START"
+                android:text="START"
                 android:textColor="#ffffff"
                 android:textSize="16sp"
-                android:textStyle="bold"
-                android:backgroundTint="#00a86b"
-                android:layout_marginEnd="4dp" />
+                android:fontFamily="sans-serif-bold"
+                android:letterSpacing="0.08"
+                android:background="@drawable/btn_start"
+                android:layout_marginEnd="6dp"
+                android:stateListAnimator="@null"
+                android:elevation="4dp" />
 
             <Button
                 android:id="@+id/btnStop"
                 android:layout_width="0dp"
                 android:layout_height="56dp"
                 android:layout_weight="1"
-                android:text="⏹ STOP"
+                android:text="STOP"
                 android:textColor="#ffffff"
                 android:textSize="16sp"
-                android:textStyle="bold"
-                android:backgroundTint="#e63946"
-                android:layout_marginStart="4dp" />
+                android:fontFamily="sans-serif-bold"
+                android:letterSpacing="0.08"
+                android:background="@drawable/btn_stop"
+                android:layout_marginStart="6dp"
+                android:stateListAnimator="@null"
+                android:elevation="4dp" />
         </LinearLayout>
 
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="#333"
-            android:layout_marginVertical="8dp" />
-
-        <!-- GPU Temperature -->
-        <TextView
-            android:id="@+id/txtGpuTemp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="GPU: --°C"
-            android:textColor="#00ff88"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:paddingVertical="4dp" />
-
-        <!-- Surface for rendering -->
+        <!-- Hidden Surface -->
         <SurfaceView
             android:id="@+id/surfaceView"
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:visibility="invisible" />
 
-        <!-- Performance Stats -->
-        <TextView
-            android:id="@+id/txtStats"
+        <!-- ══════════════════════════════════════ -->
+        <!-- PERFORMANCE CARD                       -->
+        <!-- ══════════════════════════════════════ -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Ready"
-            android:textColor="#88ff88"
-            android:textSize="12sp"
-            android:fontFamily="monospace"
-            android:background="#0a0a1a"
-            android:padding="12dp"
-            android:lineSpacingExtra="2dp" />
+            android:orientation="vertical"
+            android:background="@drawable/card_bg"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp">
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="PERFORMANCE"
+                android:textColor="#5a5a8a"
+                android:textSize="11sp"
+                android:letterSpacing="0.2"
+                android:fontFamily="sans-serif-medium"
+                android:paddingBottom="10dp" />
+
+            <TextView
+                android:id="@+id/txtStats"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Waiting for data..."
+                android:textColor="#7a7aaa"
+                android:textSize="12sp"
+                android:fontFamily="monospace"
+                android:background="@drawable/stats_bg"
+                android:padding="14dp"
+                android:lineSpacingExtra="3dp" />
+        </LinearLayout>
+
+        <!-- ══════════════════════════════════════ -->
+        <!-- SECTION: SYSTEM                        -->
+        <!-- ══════════════════════════════════════ -->
         <View
             android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="#00d4ff"
-            android:layout_marginVertical="12dp" />
+            android:layout_height="3dp"
+            android:background="@drawable/divider_gradient"
+            android:layout_marginVertical="8dp" />
 
-        <!-- ═══ SYSTEM SERVICE CONTROLS ═══ -->
         <TextView
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="⚙ System Service"
-            android:textColor="#00d4ff"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:paddingBottom="8dp" />
+            android:text="SYSTEM"
+            android:textColor="#5a5a8a"
+            android:textSize="11sp"
+            android:letterSpacing="0.25"
+            android:fontFamily="sans-serif-medium"
+            android:paddingVertical="12dp" />
 
-        <!-- System Service Toggle -->
+        <!-- ══════════════════════════════════════ -->
+        <!-- SYSTEM TOGGLES CARD                    -->
+        <!-- ══════════════════════════════════════ -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingVertical="8dp"
-            android:background="#16213e"
-            android:paddingHorizontal="12dp">
+            android:orientation="vertical"
+            android:background="@drawable/card_bg"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="6dp"
+            android:layout_marginBottom="12dp">
 
+            <!-- Background Service -->
             <LinearLayout
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingVertical="14dp">
 
-                <TextView
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Background Service"
+                        android:textColor="#e0e0f0"
+                        android:textSize="15sp"
+                        android:fontFamily="sans-serif" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Run in background, auto-detect games"
+                        android:textColor="#444466"
+                        android:textSize="11sp"
+                        android:paddingTop="2dp" />
+                </LinearLayout>
+
+                <Switch
+                    android:id="@+id/switchSystemService"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Background Service"
-                    android:textColor="#ffffff"
-                    android:textSize="15sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Runs in background, auto-detects games"
-                    android:textColor="#8899aa"
-                    android:textSize="11sp" />
+                    android:thumb="@drawable/switch_thumb"
+                    android:track="@drawable/switch_track" />
             </LinearLayout>
 
-            <Switch
-                android:id="@+id/switchSystemService"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:thumbTint="#00d4ff"
-                android:trackTint="#333" />
-        </LinearLayout>
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#1a1a3a" />
 
-        <!-- Auto-start on Boot -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingVertical="8dp"
-            android:background="#16213e"
-            android:paddingHorizontal="12dp"
-            android:layout_marginTop="4dp">
-
+            <!-- Auto-start on Boot -->
             <LinearLayout
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingVertical="14dp">
 
-                <TextView
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Start on Boot"
+                        android:textColor="#e0e0f0"
+                        android:textSize="15sp"
+                        android:fontFamily="sans-serif" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Launch automatically when device boots"
+                        android:textColor="#444466"
+                        android:textSize="11sp"
+                        android:paddingTop="2dp" />
+                </LinearLayout>
+
+                <Switch
+                    android:id="@+id/switchAutoStart"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Auto-start on Boot"
-                    android:textColor="#ffffff"
-                    android:textSize="15sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Start monitoring when phone boots up"
-                    android:textColor="#8899aa"
-                    android:textSize="11sp" />
+                    android:thumb="@drawable/switch_thumb"
+                    android:track="@drawable/switch_track" />
             </LinearLayout>
 
-            <Switch
-                android:id="@+id/switchAutoStart"
-                android:layout_width="wrap_content"
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#1a1a3a" />
+
+            <!-- FPS Overlay -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:thumbTint="#00d4ff"
-                android:trackTint="#333" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingVertical="14dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="FPS Overlay"
+                        android:textColor="#e0e0f0"
+                        android:textSize="15sp"
+                        android:fontFamily="sans-serif" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Floating FPS counter over games"
+                        android:textColor="#444466"
+                        android:textSize="11sp"
+                        android:paddingTop="2dp" />
+                </LinearLayout>
+
+                <Switch
+                    android:id="@+id/switchFpsOverlay"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:thumb="@drawable/switch_thumb"
+                    android:track="@drawable/switch_track" />
+            </LinearLayout>
         </LinearLayout>
 
-        <!-- Game Detector Button -->
+        <!-- ══════════════════════════════════════ -->
+        <!-- GAME DETECTOR BUTTON                   -->
+        <!-- ══════════════════════════════════════ -->
         <Button
             android:id="@+id/btnAccessibility"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="⚠ Enable Game Detector"
+            android:layout_height="52dp"
+            android:text="Enable Game Detector"
             android:textColor="#ffffff"
+            android:textSize="14sp"
+            android:fontFamily="sans-serif-medium"
             android:textAllCaps="false"
-            android:backgroundTint="#e63946"
-            android:layout_marginTop="8dp" />
+            android:letterSpacing="0.02"
+            android:background="@drawable/btn_warning"
+            android:stateListAnimator="@null"
+            android:elevation="2dp"
+            android:layout_marginBottom="6dp" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Game Detector uses Accessibility to detect when you open a game. It does NOT read screen content."
-            android:textColor="#667788"
-            android:textSize="10sp"
-            android:paddingVertical="4dp" />
+            android:text="Uses Accessibility to detect game launches. Does not read screen content."
+            android:textColor="#333355"
+            android:textSize="11sp"
+            android:fontFamily="sans-serif"
+            android:gravity="center"
+            android:paddingHorizontal="16dp"
+            android:paddingBottom="16dp" />
 
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="#333"
-            android:layout_marginVertical="8dp" />
-
-        <!-- FPS Overlay Toggle -->
+        <!-- ══════════════════════════════════════ -->
+        <!-- SERVICE STATUS CARD                    -->
+        <!-- ══════════════════════════════════════ -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingVertical="8dp"
-            android:background="#16213e"
-            android:paddingHorizontal="12dp">
+            android:orientation="vertical"
+            android:background="@drawable/card_bg"
+            android:padding="16dp">
 
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="📊 FPS Overlay"
-                    android:textColor="#ffffff"
-                    android:textSize="15sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Floating FPS counter in-game (tap to expand/collapse, drag to move)"
-                    android:textColor="#8899aa"
-                    android:textSize="11sp" />
-            </LinearLayout>
-
-            <Switch
-                android:id="@+id/switchFpsOverlay"
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:thumbTint="#00d4ff"
-                android:trackTint="#333" />
+                android:text="SERVICE LOG"
+                android:textColor="#5a5a8a"
+                android:textSize="11sp"
+                android:letterSpacing="0.2"
+                android:fontFamily="sans-serif-medium"
+                android:paddingBottom="10dp" />
+
+            <TextView
+                android:id="@+id/txtServiceStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Service not running"
+                android:textColor="#5a5a8a"
+                android:textSize="12sp"
+                android:fontFamily="monospace"
+                android:background="@drawable/stats_bg"
+                android:padding="14dp"
+                android:lineSpacingExtra="3dp" />
         </LinearLayout>
 
+        <!-- Bottom spacing -->
         <View
             android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="#333"
-            android:layout_marginVertical="8dp" />
-
-        <!-- Service Status -->
-        <TextView
-            android:id="@+id/txtServiceStatus"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Service: Not running"
-            android:textColor="#88ff88"
-            android:textSize="12sp"
-            android:fontFamily="monospace"
-            android:background="#0a0a1a"
-            android:padding="12dp"
-            android:lineSpacingExtra="2dp" />
+            android:layout_height="20dp" />
 
     </LinearLayout>
 </ScrollView>
