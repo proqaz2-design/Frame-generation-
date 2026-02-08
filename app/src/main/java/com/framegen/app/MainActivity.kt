@@ -217,13 +217,13 @@ class MainActivity : AppCompatActivity() {
         switchFpsOverlay.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
                 if (Settings.canDrawOverlays(this)) {
-                    FpsOverlayService.start(this)
+                    FpsOverlayService.show(this)
                 } else {
                     switchFpsOverlay.isChecked = false
                     startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION))
                 }
             } else {
-                FpsOverlayService.stop(this)
+                FpsOverlayService.hide(this)
             }
         }
 
@@ -245,7 +245,8 @@ class MainActivity : AppCompatActivity() {
         // Force refresh rate
         switchForceRefresh.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
-                RefreshRateController.forceHighRefreshRate(this)
+                val rrc = RefreshRateController(this)
+                rrc.setHighestRefreshRate(this)
             }
             savePrefs()
         }
@@ -625,8 +626,8 @@ class MainActivity : AppCompatActivity() {
                     txtFrameTime.text = String.format("%.1f ms", stats.totalMs)
                     txtGenerated.text = stats.framesGenerated.toString()
                     txtDropped.text = stats.framesDropped.toString()
-                    txtGpuTemp.text = if (stats.gpuTempCelsius > 0)
-                        "${stats.gpuTempCelsius.toInt()}°C" else "--°C"
+                    txtGpuTemp.text = if (stats.gpuTemp > 0)
+                        "${stats.gpuTemp.toInt()}°C" else "--°C"
                 } catch (_: Exception) {}
                 delay(500)
             }
