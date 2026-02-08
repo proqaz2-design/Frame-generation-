@@ -1,0 +1,82 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+
+    - name: Install NDK
+      run: |
+        yes | sdkmanager --install "ndk;26.1.10909125" "cmake;3.22.1" || true
+        echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125" >> $GITHUB_ENV
+
+    - name: Install shader compiler
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y glslang-tools
+
+    - name: Compile GLSL shaders to SPIR-V
+      run: |
+        cd app/src/main/cpp/shaders
+        mkdir -p ../../assets/shaders
+        for f in *.comp; do
+          echo "Compiling $f..."
+          glslangValidator -V "$f" -o "../../assets/shaders/${f%.comp}.spv"
+        done
+        ls -la ../../assets/shaders/
+
+    - name: Make gradlew executable
+      run: |
+        if [ ! -f gradlew ]; then
+          gradle wrapper --gradle-version 8.5
+        fi
+        chmod +x gradlew
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+      with:
+        gradle-version: '8.5'
+
+    - name: Build Debug APK
+      run: gradle assembleDebug --no-daemon --stacktrace
+      env:
+        ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: framegen-debug-apk
+        path: app/build/outputs/apk/debug/*.apk
+        if-no-files-found: warn
+
+    - name: Build Summary
+      if: always()
+      run: |
+        echo "## Build Results" >> $GITHUB_STEP_SUMMARY
+        echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        if [ -f app/build/outputs/apk/debug/*.apk ]; then
+          echo "- **Status:** ✅ APK built successfully" >> $GITHUB_STEP_SUMMARY
+          echo "- **APK:** Available in artifacts" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "- **Status:** ⚠️ Build completed (check logs)" >> $GITHUB_STEP_SUMMARY
+        fi
