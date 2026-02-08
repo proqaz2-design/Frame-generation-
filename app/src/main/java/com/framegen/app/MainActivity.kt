@@ -246,7 +246,7 @@ class MainActivity : AppCompatActivity() {
         switchForceRefresh.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
                 val rrc = RefreshRateController(this)
-                rrc.setHighestRefreshRate(this)
+                rrc.requestMaxRefreshRate(this)
             }
             savePrefs()
         }
