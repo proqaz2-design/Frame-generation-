@@ -9,7 +9,15 @@
 namespace framegen {
 
 void PerfMonitor::init() {
-    stats_ = PerfStats{};
+    stats_.capture_ms.store(0.0f);
+    stats_.motion_est_ms.store(0.0f);
+    stats_.interpolation_ms.store(0.0f);
+    stats_.present_ms.store(0.0f);
+    stats_.total_ms.store(0.0f);
+    stats_.frames_generated.store(0);
+    stats_.frames_dropped.store(0);
+    stats_.gpu_temp_celsius.store(0.0f);
+    stats_.effective_fps.store(0.0f);
     lastReportNs_ = now_ns();
 }
 
