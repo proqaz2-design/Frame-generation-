@@ -125,6 +125,10 @@ class GameLauncher(private val context: Context) {
     /**
      * Setup Vulkan layer using Shizuku (ADB over app).
      */
+    fun injectVulkanLayerViaShizuku(targetPackage: String): Boolean {
+        return setupViaShizuku(targetPackage)
+    }
+
     private fun setupViaShizuku(targetPackage: String): Boolean {
         return try {
             // Check if Shizuku is available and authorized
@@ -187,6 +191,13 @@ class GameLauncher(private val context: Context) {
     }
 
     private fun isKnownGamePackage(packageName: String): Boolean {
+        return isKnownGame(packageName)
+    }
+
+    /**
+     * Check if a package is from a known game publisher.
+     */
+    fun isKnownGame(packageName: String): Boolean {
         val gamePatterns = listOf(
             "com.activision", "com.ea.", "com.gameloft",
             "com.supercell", "com.tencent", "com.mihoyo",

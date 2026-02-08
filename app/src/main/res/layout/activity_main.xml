@@ -238,5 +238,138 @@
             android:padding="12dp"
             android:lineSpacingExtra="2dp" />
 
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#00d4ff"
+            android:layout_marginVertical="12dp" />
+
+        <!-- ═══ SYSTEM SERVICE CONTROLS ═══ -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="⚙ System Service"
+            android:textColor="#00d4ff"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:paddingBottom="8dp" />
+
+        <!-- System Service Toggle -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingVertical="8dp"
+            android:background="#16213e"
+            android:paddingHorizontal="12dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Background Service"
+                    android:textColor="#ffffff"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Runs in background, auto-detects games"
+                    android:textColor="#8899aa"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <Switch
+                android:id="@+id/switchSystemService"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:thumbTint="#00d4ff"
+                android:trackTint="#333" />
+        </LinearLayout>
+
+        <!-- Auto-start on Boot -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingVertical="8dp"
+            android:background="#16213e"
+            android:paddingHorizontal="12dp"
+            android:layout_marginTop="4dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Auto-start on Boot"
+                    android:textColor="#ffffff"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Start monitoring when phone boots up"
+                    android:textColor="#8899aa"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <Switch
+                android:id="@+id/switchAutoStart"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:thumbTint="#00d4ff"
+                android:trackTint="#333" />
+        </LinearLayout>
+
+        <!-- Game Detector Button -->
+        <Button
+            android:id="@+id/btnAccessibility"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="⚠ Enable Game Detector"
+            android:textColor="#ffffff"
+            android:textAllCaps="false"
+            android:backgroundTint="#e63946"
+            android:layout_marginTop="8dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Game Detector uses Accessibility to detect when you open a game. It does NOT read screen content."
+            android:textColor="#667788"
+            android:textSize="10sp"
+            android:paddingVertical="4dp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#333"
+            android:layout_marginVertical="8dp" />
+
+        <!-- Service Status -->
+        <TextView
+            android:id="@+id/txtServiceStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Service: Not running"
+            android:textColor="#88ff88"
+            android:textSize="12sp"
+            android:fontFamily="monospace"
+            android:background="#0a0a1a"
+            android:padding="12dp"
+            android:lineSpacingExtra="2dp" />
+
     </LinearLayout>
 </ScrollView>

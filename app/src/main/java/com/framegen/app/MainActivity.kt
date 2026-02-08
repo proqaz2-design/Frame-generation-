@@ -1,6 +1,8 @@
 package com.framegen.app
 
+import android.content.*
 import android.os.Bundle
+import android.provider.Settings
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
@@ -10,6 +12,8 @@ import androidx.lifecycle.lifecycleScope
 import com.framegen.app.engine.FrameGenEngine
 import com.framegen.app.engine.GameLauncher
 import com.framegen.app.engine.RefreshRateController
+import com.framegen.app.service.FrameGenService
+import com.framegen.app.service.GameDetectorService
 import kotlinx.coroutines.*
 
 class MainActivity : AppCompatActivity() {
@@ -29,9 +33,20 @@ class MainActivity : AppCompatActivity() {
     private lateinit var txtGpuTemp: TextView
     private lateinit var switchThermal: Switch
     private lateinit var gameListView: ListView
+    private lateinit var switchAutoStart: Switch
+    private lateinit var switchSystemService: Switch
+    private lateinit var btnAccessibility: Button
+    private lateinit var txtServiceStatus: TextView
 
     private var statsJob: Job? = null
     private var selectedGame: GameLauncher.GameInfo? = null
+
+    // Listen for service state changes
+    private val stateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            updateServiceStatusUI()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,6 +59,16 @@ class MainActivity : AppCompatActivity() {
         initViews()
         setupListeners()
         showDisplayInfo()
+
+        // Register for service state updates
+        registerReceiver(stateReceiver, IntentFilter("com.framegen.app.STATE_CHANGED"),
+            RECEIVER_NOT_EXPORTED)
+
+        // Auto-start service if it was enabled
+        val prefs = getSharedPreferences(FrameGenService.PREF_NAME, MODE_PRIVATE)
+        if (prefs.getBoolean(FrameGenService.PREF_ENABLED, false)) {
+            FrameGenService.start(this)
+        }
     }
 
     private fun initViews() {
@@ -69,6 +94,19 @@ class MainActivity : AppCompatActivity() {
         seekQuality.progress = 50
 
         btnStop.isEnabled = false
+
+        // System service controls
+        switchAutoStart = findViewById(R.id.switchAutoStart)
+        switchSystemService = findViewById(R.id.switchSystemService)
+        btnAccessibility = findViewById(R.id.btnAccessibility)
+        txtServiceStatus = findViewById(R.id.txtServiceStatus)
+
+        // Restore prefs
+        val prefs = getSharedPreferences(FrameGenService.PREF_NAME, MODE_PRIVATE)
+        switchAutoStart.isChecked = prefs.getBoolean(FrameGenService.PREF_AUTO_START_BOOT, false)
+        switchSystemService.isChecked = FrameGenService.isRunning
+
+        updateServiceStatusUI()
     }
 
     private fun setupListeners() {
@@ -122,10 +160,37 @@ class MainActivity : AppCompatActivity() {
         seekQuality.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 engine.setQuality(progress / 100f)
+                FrameGenService.updateMode(this@MainActivity,
+                    spinnerMode.selectedItemPosition, progress / 100f)
             }
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
+
+        // System service toggle
+        switchSystemService.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                FrameGenService.start(this)
+            } else {
+                FrameGenService.stop(this)
+            }
+            updateServiceStatusUI()
+        }
+
+        // Auto-start on boot toggle
+        switchAutoStart.setOnCheckedChangeListener { _, isChecked ->
+            getSharedPreferences(FrameGenService.PREF_NAME, MODE_PRIVATE)
+                .edit()
+                .putBoolean(FrameGenService.PREF_AUTO_START_BOOT, isChecked)
+                .apply()
+        }
+
+        // Open accessibility settings
+        btnAccessibility.setOnClickListener {
+            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+            startActivity(intent)
+            Toast.makeText(this, "Enable 'FrameGen Game Detector'", Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun startFrameGeneration() {
@@ -250,13 +315,59 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         statsJob?.cancel()
         engine.destroy()
+        try { unregisterReceiver(stateReceiver) } catch (_: Exception) {}
         super.onDestroy()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateServiceStatusUI()
     }
 
     override fun onPause() {
         super.onPause()
-        if (engine.isRunning) {
-            engine.stop()
+        // Don't stop engine — service keeps it running in the background
+    }
+
+    private fun updateServiceStatusUI() {
+        val serviceOn = FrameGenService.isRunning
+        val generating = FrameGenService.isActivelyGenerating
+        val accessibilityOn = GameDetectorService.isServiceActive
+        val game = FrameGenService.currentGamePackage
+
+        switchSystemService.isChecked = serviceOn
+
+        val status = buildString {
+            appendLine("═══ System Status ═══")
+
+            append("Service: ")
+            appendLine(if (serviceOn) "✓ RUNNING" else "✗ Stopped")
+
+            append("Game Detector: ")
+            appendLine(if (accessibilityOn) "✓ Active" else "✗ Not enabled")
+
+            append("Frame Gen: ")
+            if (generating) {
+                appendLine("✓ ACTIVE")
+                append("Game: ")
+                appendLine(game ?: "unknown")
+            } else {
+                appendLine(if (serviceOn) "○ Waiting for game..." else "✗ Off")
+            }
+
+            append("Auto-start: ")
+            appendLine(if (switchAutoStart.isChecked) "✓ On boot" else "✗ Manual")
+        }
+
+        txtServiceStatus.text = status
+
+        // Highlight accessibility button if not enabled
+        if (!accessibilityOn) {
+            btnAccessibility.setBackgroundColor(getColor(android.R.color.holo_orange_dark))
+            btnAccessibility.text = "⚠ Enable Game Detector"
+        } else {
+            btnAccessibility.setBackgroundColor(getColor(android.R.color.holo_green_dark))
+            btnAccessibility.text = "✓ Game Detector Active"
         }
     }
 }

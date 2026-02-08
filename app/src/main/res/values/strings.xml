@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">FrameGen</string>
+    <string name="game_detector_label">FrameGen Game Detector</string>
+    <string name="game_detector_description">Detects when games are launched to automatically enable frame generation. FrameGen does not read any screen content — it only monitors which app is in the foreground.</string>
 </resources>
